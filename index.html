@@ -92,12 +92,12 @@
     <header>
         <h1>Portfolio</h1>
         <nav>
-            <a href="#hero">Home</a>
-            <a href="#about">About Me</a>
-            <a href="#skills">Skills</a>
-            <a href="#projects">Projects</a>
-            <a href="#experience">Experience</a>
-            <a href="#education">Education</a>
+            <a href="#hero" aria-label="Go to Home section">Home</a>
+            <a href="#about" aria-label="Go to About section">About Me</a>
+            <a href="#skills" aria-label="Go to Skills section">Skills</a>
+            <a href="#projects" aria-label="Go to Projects section">Projects</a>
+            <a href="#experience" aria-label="Go to Experience section">Experience</a>
+            <a href="#education" aria-label="Go to Education section">Education</a>
         </nav>
     </header>
 
@@ -129,13 +129,13 @@
             <li>
                 <strong>Megaline - Revenue Analysis</strong>
                 <ul>
-                    <li><strong>Goal and Challenges:</strong> Determine which of the prepaid phone plans brings in more
+                    <li>Goal and Challenges: Determine which of the prepaid phone plans brings in more
                         revenue in order to adjust the advertising budget. The data was highly fragmented and a sampling
                         was required due to the large data size.</li>
-                    <li><strong>Methods:</strong> Hypothesis testing was used to determine differences between plans and
+                    <li>Methods: Hypothesis testing was used to determine differences between plans and
                         customer characteristics. Data management techniques related to data joining and grouping.
                         Aggregation functions were used to analyze revenue by both year and month.</li>
-                    <li><strong>Results:</strong> 66% of users were on Surf (the cheaper plan). General usage behavior
+                    <li>Results: 66% of users were on Surf (the cheaper plan). General usage behavior
                         between plans (number of calls, call duration, number of messages, number of internet sessions,
                         and overall data usage) across years and months were not statistically different.</li>
                 </ul>
@@ -143,17 +143,18 @@
             <li>
                 <strong>Instacart - Customer Behavior Analysis</strong>
                 <ul>
-                    <li><strong>Goal and Challenges:</strong> Understand customer behavior. Conclusions could contribute
-                        to driving operational efficiency, marketing, and revenue forecasting decisions. To achieve the
-                        goal, dataframes needed to be linked appropriately in order to conduct proper analysis. Some
+                    <li>
+                        Goal and Challenges: Understand customer behavior. Conclusions could contribute to driving
+                        operational efficiency, marketing, and revenue forecasting decisions. To achieve the goal,
+                        dataframes needed to be linked appropriately in order to conduct proper analysis. Some
                         columns had incorrect data types (e.g., order IDs as floats instead of integers) and certain
-                        columns had missing values that needed to be handled appropriately, like subscription end date.
-                    </li>
-                    <li><strong>Methods:</strong> Handled nonstandard formatting, verified and corrected values and data
+                        columns had missing values that needed to be handled appropriately, like subscription end
+                        date. </li>
+                    <li>Methods: Handled nonstandard formatting, verified and corrected values and data
                         types, identified missing values and filled them using appropriate strategies (e.g., drop, mean,
                         max, min, etc.). Removed duplicates. Created histograms, box plots, and bar plots to visualize
                         the data. Used group and aggregation functions to explore additional data distributions.</li>
-                    <li><strong>Results:</strong> Shoppers tended to buy between 10am - 4pm at the beginning of the
+                    <li>Results: Shoppers tended to buy between 10am - 4pm at the beginning of the
                         week. About half of shoppers submitted orders once every 2 weeks, and the other half once every
                         month or longer, on average. The average customer ordered 3-10 products per order and placed
                         between 1 and 5 orders during the dataset time frame. The most common items purchased were a
