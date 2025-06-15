@@ -181,6 +181,47 @@
                         typically of the same perishable produce and milk.</li>
                 </ul>
             </li>
+            <li>
+                <strong>Megaline - Plan Recommendation Model</strong>
+                <ul>
+                    <li>Goal and Challenges: Develop a model to recommend one of Megaline’s newer plans (Smart or Ultra)
+                        based on
+                        subscriber behavior. Achieve an accuracy threshold of at least 75%. Account for imbalanced data
+                        in model fitting and model evaluation.</li>
+                    <li>Methods: Used behavior data from subscribers who had already switched to new plans. Training
+                        data, accounting for imbalance, was used to train the model. The model was evaluated against a
+                        naive baseline (dummy classifier) that predicted according to the target’s proportions,
+                        establishing a meaningful benchmark.</li>
+                    <li>Results: The final model achieved 81% accuracy on the test set, outperforming the baseline model
+                        (69%) by 12%. This exceeded the required 5% outperformance threshold by over 2x, demonstrating
+                        the model’s value.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Ice - Sales Analysis</strong>
+                <ul>
+                    <li>Goal and Challenges: Identify patterns that determine whether a video game succeeds, using user
+                        and expert reviews, genres, platforms, and historical sales data. Use insights to spot potential
+                        big winners and plan advertising campaigns for 2017. Challenges included working with incomplete
+                        data (missing price and units sold) and accounting for differences across platforms, genres, and
+                        regions.</li>
+                    <li>Methods: Analyzed data from open sources covering game releases, sales, reviews, genres, and
+                        platforms up to December 2016. Explored trends in game releases, sales peaks, platform life
+                        cycles, and regional performance. Examined correlations between critic/user scores and sales,
+                        and compared sales distributions across platforms and genres. Investigated regional differences
+                        in sales, genre popularity, and ratings.</li>
+                    <li>Results: Peak game releases and sales occurred in 2008; peak mean sales per game was in 1989.
+                        New platforms drive new sales, but all platforms decline over time, with a typical sales cycle
+                        of about 10 years. Top platforms by sales: PS3, X360, Wii. Year-over-year growth is strongest in
+                        the first year of a platform and declines thereafter. Sales distributions by platform are not
+                        always normal. Critic and user scores are correlated, and higher ratings are associated with
+                        higher sales. Action is the top-selling genre, but sales across all genres are declining. North
+                        America and Europe are the largest markets and perform similarly; Japan and other regions have
+                        lower but similar sales. Genre sales and ratings vary by region. Average user ratings differ
+                        between Xbox and PC, but not between Action and Sports genres. Analysis could be improved with
+                        access to price and units sold data.</li>
+                </ul>
+            </li>
         </ul>
     </section>
 
