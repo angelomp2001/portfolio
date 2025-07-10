@@ -27,8 +27,8 @@ df_1_training_features = df_1_training[features]
 
 model = LinearRegression()
 model.fit(df_1_training_features, df_1_training_target)
-df_1_validation_target_actual = df_1_validation[target]
-scores = model.score(df_1_validation[features], df_1_validation_target_actual)
+
+scores = model.score(df_1_validation[features], df_1_validation[target])
 print(f"Model score: {scores:.2f}")
 
 # Predict on the validation set using the correct features.
