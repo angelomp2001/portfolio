@@ -521,7 +521,7 @@ order_products_and_products[:20].plot(
     x='product_name',
     y='count')
 
-plt.xticks(rotation=45, ha='right') #tilts text 45, horizontal alignment set to right
+plt.xticks(rotation=45, ha='right') 
 plt.show()
 
 '''
