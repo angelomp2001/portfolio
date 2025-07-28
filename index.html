@@ -146,6 +146,15 @@
         <h2>Projects</h2>
         <ul>
             <li>
+               <strong>Zyfra - Gold Recovery Optimization</strong>
+                <ul>
+                    <li>Goal and Challenges: Zyfra, a company specializing in efficiency solutions for heavy industry, aims to optimize the production of gold recovery from gold ore. The goal is to develop a machine learning model that predicts the amount of gold recovered from gold ore, leveraging data on extraction and purification. The challenge lies in the incomplete nature of the data, where some features are missing in the test set and the test set lacks target values. The model will help Zyfra optimize production and eliminate unprofitable parameters. </li>
+                    <li>Methods: I validated the data by applying formulae provided by the client to calculate some of the features. I also analyzed features that were present in the training data set, but missing from the test set. I standardized and normalize the data to ensure uniformity across features. I performed a Metal Concentration Analysis to measure the effect of purification stages. I also measured particle size distributionc to identify significant discrepancies. Finally, I checked total substance concentrations for abnormal values. I tested linear regression, decision tree, and random forest using cross-validation and against the Symmetric Mean Absolute Percentage Error (sMAPE) evaluation metric. </li>
+                    <li>Results: One region emerged as the optimal choice and the lowest risk of loss. While another region showed higher mean profit, it had a higher risk of loss. The analysis balanced potential returns against business constraints including the development budget and the requirement to keep risk below a specific threshold. A training and test dataset were provided, with a partial overlap in columns. The training set contained target values, while the test set lacked both targets and some features. The recovery column was validated, revealing no inconsistency (MAE = 0.00). Missing data were handled by dropping incomplete rows. Concentrations of Au, Ag, and Pb were analyzed, showing significant changes across purification stages. The feed particle size distribution between the training and test sets varied significantly for 14 features. Total substance concentrations were analyzed, and abnormal values were removed. Linear, decision tree, and random forest models were trained, with the random forest model achieving the best performance (final sMAPE: 1.863349032364476).</li>
+                </ul>
+            </li>    
+
+            <li>
                <strong>OilyGiant - Investment Risk of Loss Minimization</strong>
                 <ul>
                     <li>Goal and Challenges: Identify the most profitable region for new oil well development by analyzing oil quality and reserve volumes across three regions. The challenge was to build predictive models for each region, calculate potential profits, and assess risks using bootstrapping to make an economically sound decision.  </li>
