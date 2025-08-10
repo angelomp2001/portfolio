@@ -1,3 +1,6 @@
+'''
+
+'''
 #libraries and other files
 import pandas as pd
 import os
@@ -34,7 +37,7 @@ gold_recovery_train = pd.read_csv('gold_recovery_train.csv')
 gold_recovery_test = pd.read_csv('gold_recovery_test.csv')
 
 ##############################################
-# an closer look
+# a closer look
 
 #headers, values, dtypes, missing values, summaries
 
@@ -53,31 +56,30 @@ gold_recovery_test = pd.read_csv('gold_recovery_test.csv')
 common_columns = set(gold_recovery_train.columns) & set(gold_recovery_test.columns)
 # [col for col in common_columns]
 
+'''
+df_full notes
+no duplicate values
+all cols seem relevant
+all cols are continuous
+date col should be dtype datetime
+target has the most missing: rougher.output.recovery: 3119 (14%), but we have lots of data, so dropna() it is. 
 
+df_train notes
+date col should be dtype datetime
+target has the most missing: rougher.output.recovery: 2573 (15%), but we have lots of data, so dropna() it is. 
 
-#df_full notes
-# no duplicate values
-# all cols seem relevant
-# all cols are continuous
-# date col should be dtype datetime
-# target has the most missing: rougher.output.recovery: 3119 (14%), but we have lots of data, so dropna() it is. 
-
-# df_train notes
-# date col should be dtype datetime
-# target has the most missing: rougher.output.recovery: 2573 (15%), but we have lots of data, so dropna() it is. 
-
-# df_test notes
-# date col should be dtype datetime
-# target is missing: rougher.output.recovery: predict using features.
-
+df_test notes
+date col should be dtype datetime
+target is missing: rougher.output.recovery: predict using features.
+'''
 
 # max rows (the index column)
 # print(max([views['headers'][row]['Unique Values'] for row in range(len(views['headers']))])) 
 
 #############################
 # data processing
-#1.4 Peform data preprocessing
 
+#dropna
 #df_full
 gold_recovery_full['date'] = pd.to_datetime(gold_recovery_full['date'])
 gold_recovery_full = gold_recovery_full.dropna()
@@ -91,7 +93,7 @@ gold_recovery_test['date'] = pd.to_datetime(gold_recovery_test['date'])
 gold_recovery_test = gold_recovery_test.dropna()
 
 #################################
-# 1.2. Check that recovery is calculated correctly. Using the training set, calculate recovery for the rougher.output.recovery feature. Find the MAE between your calculations and the feature values. Provide findings.
+# Check that recovery is calculated correctly: rougher.output.recovery feature. 
 
 # rougher recovery target 
 C = gold_recovery_train['rougher.output.concentrate_au'] # share of gold in the concentrate right after flotation
@@ -100,65 +102,48 @@ T = gold_recovery_train['rougher.output.tail_au'] # share of gold in the rougher
 #print(gold_recovery_train[['rougher.input.feed_au','rougher.output.concentrate_au','rougher.output.tail_au']])
 
 print(f"means:\n{gold_recovery_train['rougher.input.feed_au'].mean():.02f}\n{gold_recovery_train['rougher.output.concentrate_au'].mean():.02f}\n{gold_recovery_train['rougher.output.tail_au'].mean():.02f}")
-# means:
-# 8.11 (input)
-# 19.78 (concentrate output)
-# 1.84 (tail output)
-# is this saying concentration went up?
 
-# from course documentation 
-# gold_recovery_train['rougher.output.recovery.qa'] = (C * (F - T)) / ((F * (C - T))
-
-# from DOT
-gold_recovery_train['rougher.output.recovery.qa'] = ((C - F) / (T - F)) * 100
-
+# formula:
+gold_recovery_train['rougher.output.recovery.qa'] = C*(F-T)/F/(C-T)*100
 
 # MAE
 rougher_output_recovery_MAE = abs(gold_recovery_train['rougher.output.recovery'] - gold_recovery_train['rougher.output.recovery.qa'])
 
-#print(gold_recovery_train['rougher.output.recovery.qa'].astype('int64'))#.nunique())
-
-
-# final recovery target
-#C = gold_recovery_train['final.output.concentrate_au']
-#F — share of gold in the feed before flotation (for finding the rougher concentrate recovery)/in the concentrate right after flotation (for finding the final concentrate recovery)
-#T — share of gold in the rougher tails right after flotation (for finding the rougher concentrate 
+# marginal difference between the two columns
 
 ######################################
-# Create a figure with 3 subplots (stacked vertically)
-# plt.figure(figsize=(10, 12))
+# figure
+plt.figure(figsize=(10, 12))
 
-# First histogram
+#First histogram
+plt.subplot(3, 1, 1)
+plt.hist(gold_recovery_train['rougher.output.recovery'].astype('int64'), bins=30, color='blue', alpha=0.7)
+plt.title('Rougher Output Recovery')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
 
-# plt.subplot(3, 1, 1)
-# plt.hist(gold_recovery_train['rougher.output.recovery'].astype('int64'), bins=30, color='blue', alpha=0.7)
-# plt.title('Rougher Output Recovery')
-# plt.xlabel('Value')
-# plt.ylabel('Frequency')
 
+#Second histogram
+plt.subplot(3, 1, 2)
+plt.hist(gold_recovery_train['rougher.output.recovery.qa'].astype('int64'), bins=30, color='green', alpha=0.7)
+plt.title('Rougher Output Recovery QA')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
 
-# Second histogram
-# plt.subplot(3, 1, 2)
-# plt.hist(gold_recovery_train['rougher.output.recovery.qa'].astype('int64'), bins=30, color='green', alpha=0.7)
-# plt.title('Rougher Output Recovery QA')
-# plt.xlabel('Value')
-# plt.ylabel('Frequency')
+#Third histogram (absolute difference)
+plt.subplot(3, 1, 3)
+plt.hist(abs(gold_recovery_train['rougher.output.recovery'].astype('int64') - gold_recovery_train['rougher.output.recovery.qa'].astype('int64')), 
+         bins=30, color='red', alpha=0.7)
+plt.title('Absolute Difference Histogram')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
 
-# Third histogram (absolute difference)
-# plt.subplot(3, 1, 3)
-# plt.hist(abs(gold_recovery_train['rougher.output.recovery'].astype('int64') - gold_recovery_train['rougher.output.recovery.qa'].astype('int64')), 
-#          bins=30, color='red', alpha=0.7)
-# plt.title('Absolute Difference Histogram')
-# plt.xlabel('Value')
-# plt.ylabel('Frequency')
-
-# plt.tight_layout()
-# plt.show()
+#show the plot
+plt.tight_layout()
+plt.show()
 
 ################################
-#1.3. Analyze the features not available in the test set. What are these parameters? What is their type?
-
-#features not available in the test set:
+# features not available in the test set:
 in_train_not_test = set(gold_recovery_train.columns) - set(gold_recovery_test.columns)
 print(in_train_not_test)
 
@@ -199,12 +184,9 @@ print(in_train_not_test)
 # secondary_cleaner.output.tail_pb
 # secondary_cleaner.output.tail_sol
 
-#####################################
-# 1.4. Perform data preprocessing.
-# (see above) I did this earlier because NaN required attention first.
-
 ###################################
-# 2.1. Take note of how the concentrations of metals (Au, Ag, Pb) change depending on the purification stage.
+# how the concentrations of metals (Au, Ag, Pb) change depending on the purification stage.
+
 # get relevant cols
 #[col for col in gold_recovery_full.columns if '_au' in col]
 #[col for col in gold_recovery_full.columns if '_ag' in col]
@@ -220,7 +202,7 @@ print(in_train_not_test)
 #'rougher.input.feed_pb' - 'rougher.output.concentrate_pb' - 'primary_cleaner.output.concentrate_pb' - 'final.output.concentrate_pb'
 #'rougher.input.feed_pb' - 'rougher.output.tail_pb' - 'primary_cleaner.output.tail_pb' - 'secondary_cleaner.output.tail_pb' - 'final.output.tail_pb' 
 
-# chains ot interate over to plot
+# chains to interate over to plot
 chains = {
     "Au Concentrate": [
         'rougher.input.feed_au',
@@ -263,14 +245,15 @@ chains = {
 }
 
 # plot
-"""fig, axs = plt.subplots(3, 2, figsize=(15, 15))
+fig, axs = plt.subplots(3, 2, figsize=(15, 15))
 axs = axs.flatten()  # flatten to iterate over subplots easily
 
 # Iterate over each chain and its corresponding subplot
 for idx, (chain_name, steps) in enumerate(chains.items()):
     ax = axs[idx]
-    # Compute the average value for each step (requires a DataFrame named 'gold_recovery')
-    values = [gold_recovery_full[step].median() for step in steps] # I didnt bother checking if normally distributed to used median.
+
+    # Calculate the average value for each step
+    values = [gold_recovery_full[step].median() for step in steps] # median is more robust to outliers than mean
     
     # Create the bar chart
     bars = ax.bar(steps, values, color='skyblue')
@@ -290,7 +273,7 @@ for idx, (chain_name, steps) in enumerate(chains.items()):
                 f'{height:.2f}', ha='center', va='bottom')
 
 plt.tight_layout()
-plt.show()"""
+plt.show()
 
 # extra au vars
 #'rougher.calculation.sulfate_to_au_concentrate'
@@ -301,10 +284,7 @@ plt.show()"""
 #'rougher.calculation.au_pb_ratio'
 
 ######################################
-# 2.2. Compare the feed particle size distributions in the training set and in the test set. If the distributions vary significantly, the model evaluation will be incorrect.
-
-# I'm just going go compare all vars between training and test.  They should all be similar if they're random subsamples of full df. 
-# common columns
+# feed particle size distributions et al in the training set vs in the test set. They need to be similar, otherwise the model will not work well.
 
 #common_columns = set(gold_recovery_train.columns) & set(gold_recovery_test.columns)
 #print([col for col in common_columns])
@@ -364,16 +344,19 @@ common_columns_sans_date = [
     "secondary_cleaner.state.floatbank6_a_air",
     "secondary_cleaner.state.floatbank6_a_level"
 ]
-"""counter = 0
+
+'''
+counter = 0
 for col in common_columns_sans_date:
     output = split_test_plot(gold_recovery_train[col],gold_recovery_test[col])
     if abs(output['diff_means']/output['mean_1']) >= 0.10:
         counter += 1
         print(f'{col} diff_means: {round(output["diff_means"]/output["mean_1"],2)}')
-print(f'n concerning vars: {counter}') #14"""
+print(f'n concerning vars: {counter}') #14
+'''
 
 ##############################################
-# 2.3. Consider the total concentrations of all substances at different stages: raw feed, rougher concentrate, and final concentrate. Do you notice any abnormal values in the total distribution? If you do, is it worth removing such values from both samples? Describe the findings and eliminate anomalies. 
+#  total concentrations of all substances at different stages: raw feed, rougher concentrate, and final concentrate. checking for abnormal values. 
 
 # [col for col in gold_recovery_full.columns]
 
@@ -545,13 +528,10 @@ for col in sum_cols_y:
 # high number of 0s: rougher_output_concentrate_sum, primary_cleaner_output_sum, primary_cleaner_output_tail_sum, secondary_cleaner_output_tail_sum
 # noticeable number of 0s: final_output_concentrate_sum, final_output_tail_sum
 # 0s might be a missing data label
-# I'll drop them, though in reality I'd ask about this. 
+# I'll drop them, though this should be confirmed by the client. 
 
 ##########################################
-# add sum cols to dfs and then drop 0 sum rows
-
-
-# add sum col and drop 0 sums while youre at it
+# add sum col and drop 0 sums
 for y, x in zip(sum_cols_y, sum_cols_x):
     if x in gold_recovery_train.columns:
         # add sum col
@@ -566,7 +546,7 @@ for y, x in zip(sum_cols_y, sum_cols_x):
 # test it worked
 #(gold_recovery_train[sum_cols_y[0]] == 0).astype('int64').sum() # equals 0
 ##########################################
-#3.1. Write a function to calculate the final sMAPE value.
+#calculate the final sMAPE value.
 def smape(
     target:pd.Series = None,
     pred:pd.Series = None
@@ -574,11 +554,11 @@ def smape(
     smape = ((target - pred)/ ((target + pred)/2)).mean()*100
     return smape
 
-# Create a scorer that negates SMAPE (so higher is better for sklearn)
+# a scorer that negates SMAPE (so higher is better for sklearn)
 cross_val_score_smape = make_scorer(smape, greater_is_better=False)
 
 #########################################
-# 3.2. Train different models. Evaluate them using cross-validation. Pick the best model and test it using the test sample. Provide findings.
+# Training different models. Evaluating using cross-validation. Pick the best model.
 target = gold_recovery_train['rougher.output.recovery']
 features = gold_recovery_train[list(common_columns_sans_date)]
 features_test = features.copy()
@@ -622,8 +602,8 @@ print(f'random_forest_smape: {random_forest_train_rougher_smape}')
 # random_forest_smape: 2.421531513432531
 
 # best model: random forest
+
 ###################################################
-# 3.2 cont.
 # second target: 'final.output.recovery'
 target = gold_recovery_train['final.output.recovery']
 features = gold_recovery_train[list(common_columns_sans_date)]
@@ -669,7 +649,6 @@ print(f'random_forest_smape: {random_forest_train_final_smape}')
 
 # best model: random forest
 ##############################
-# 3.2 cont.
 # Final sMAPE
 linear_regression_train_final_sMAPE = .25*linear_regression_train_rougher_smape + .75*linear_regression_train_final_smape
 decision_tree_train_final_sMAPE = .25*decision_tree_train_rougher_smape + .75*decision_tree_train_final_smape
