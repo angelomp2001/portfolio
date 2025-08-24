@@ -1,5 +1,6 @@
 '''
-Predict 'Price' 
+Business case: Client wants to offer their customers an automated estiamte of what their car could sell for.  
+Project: Predict 'Price'. 
 '''
 
 # libraries
@@ -26,16 +27,18 @@ import tqdm
 import time
 
 
-# read
+# load data
 df = pd.read_csv('car_data.csv')
 df = df.sample(10000, random_state = 12345)
 print(df.shape)
 print(df.columns)
 
 ## EDA
+# track ordinal and categorical cols. 
 ordinal = []
 categorical = []
 
+# col 0
 column = 0
 print(df.columns[column]) # 'DateCrawled'
 
@@ -64,6 +67,7 @@ df = df.drop(df.columns[column],axis = 1)
 print(df.columns.tolist())
 
 # EDA
+# new col 0:
 column = 0
 print(df.columns[column]) # 'Price'
 
@@ -94,6 +98,7 @@ print(df.iloc[:,column].describe())
 # missing might be set at zero.  Otherwise, no odd values.  No designated missing values.
 
 # EDA
+# col 1
 column = 1
 print(df.columns[column]) # 'VehicleType'
 
@@ -125,6 +130,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# col 2
 column = 2
 print(df.columns[column]) # 'RegistrationYear'
 
@@ -158,6 +164,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# col 3
 column = 3
 print(df.columns[column]) # 'Gearbox'
 
@@ -190,6 +197,7 @@ df.iloc[:,column].value_counts().plot(kind='bar')
 # missing saved as 'missing' to keep the row.   
 
 # EDA
+# col 4
 column = 4
 # print(df.columns[column]) # 'Power'
 
@@ -227,6 +235,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# col 5
 column = 5
 print(df.columns[column]) # 'Model'
 
@@ -256,6 +265,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# col 6
 column = 6
 print(df.columns[column]) # 'Mileage'
 
@@ -284,6 +294,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# col 7
 column = 7
 print(df.columns[column]) # 'RegistrationMonth'
 
@@ -315,6 +326,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# new col 7
 column = 7
 print(df.columns[column]) # 'FuelType'
 
@@ -345,6 +357,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# col 8
 column = 8
 print(df.columns[column]) # 'Brand'
 
@@ -372,6 +385,7 @@ print(f'missing: {df.iloc[:, column].isnull().sum()}')
 
 
 # EDA
+# col 9
 column = 9
 print(df.columns[column]) # 'NotRepaired'
 
@@ -402,6 +416,7 @@ plt.show()
 
 
 # EDA
+# col 10
 column = 10
 print(df.columns[column]) # 'DateCreated'
 
@@ -430,6 +445,7 @@ print("Deleted" if 'DateCreated' not in df.columns else "Not deleted")
 
 
 # EDA
+# new col 10
 column = 10
 print(df.columns[column]) # 'NumberOfPictures'
 
@@ -455,6 +471,7 @@ print("Deleted" if 'NumberOfPictures' not in df.columns else "Not deleted")
 
 
 # EDA
+# new col 10
 column = 10
 print(df.columns[column]) # 'PostalCode'
 
@@ -484,6 +501,7 @@ print("Deleted" if 'PostalCode' not in df.columns else "Not deleted")
 
 
 # EDA
+# new col 10
 column = 10
 print(df.columns[column]) # 'LastSeen'
 
@@ -516,6 +534,7 @@ print(df[f'LastSeen_month'].head())
 print(df[f'LastSeen_day'].head())
 
 # EDA
+# new col 10
 column = 10
 print(df.columns[column]) # 'LastSeen_month'
 
@@ -542,6 +561,7 @@ df = df.drop(df.columns[column],axis = 1)
 # decided to remove. 
 
 # EDA
+# new col 10
 column = 10
 print(df.columns[column]) # 'LastSeen_day'
 
@@ -566,7 +586,7 @@ df = df.drop(df.columns[column],axis = 1)
 # QC
 # decided not to keep
 
-
+# row clean up
 # drop duplicates in the end
 df.drop_duplicates(inplace = True)
 
@@ -578,6 +598,7 @@ target = 'Price'
 df = df[ [target] + [col for col in df.columns if col != target]]
 
 
+## prepare for vectorization
 # Split data
 random_state = 12345
 train_ratio = .6
@@ -594,13 +615,17 @@ valid_ratio = valid_ratio / (1 - test_ratio)
 df_train, df_valid = train_test_split(df_temp, test_size=valid_ratio, random_state=random_state)
 
 # encode data - regression
-# 'Regressions': One-hot encodes categorical_cols. Ordinal  encoding for ordinal cols. 
-# 'Machine Learning': Ordinal encodes for both ordinal cols and categorical cols.
+# 'Regressions':
+# -- One-hot encodes categorical_cols. 
+# -- Ordinal  encoding for ordinal cols. 
+# 'Machine Learning': 
+# -- Ordinal encodes for both ordinal cols and categorical cols.
 
 # Regression model data
 df_train_regressions = df_train.copy()
 df_valid_regressions = df_valid.copy()
 df_test_regressions = df_test.copy()
+
 
 # initialize OHE
 ohe = OneHotEncoder(handle_unknown='ignore', sparse=False) # did not drop='first' because valid/train has other categories. 
@@ -619,15 +644,17 @@ df_train_regressions = pd.concat([df_train.drop(columns=categorical), train_enco
 
 
 # apply array to valid and test and update respective dfs
+# valid
 valid_encoded = ohe.transform(df_valid[categorical])
 valid_encoded_df = pd.DataFrame(valid_encoded, columns=ohe_cols, index=df_valid.index)
 df_valid_regressions = pd.concat([df_valid.drop(columns=categorical), valid_encoded_df], axis=1)
 
+# test
 test_encoded = ohe.transform(df_test[categorical])
 test_encoded_df  = pd.DataFrame(test_encoded,  columns=ohe_cols, index=df_test.index)
 df_test_regressions  = pd.concat([df_test.drop(columns=categorical),  test_encoded_df],  axis=1)
 
-
+# QC
 print(f'{df_train_regressions.columns},\n {df_valid_regressions.columns},\n {df_test_regressions.columns}')
 
 #Encode data - ML
@@ -649,12 +676,13 @@ for each_df in dfs:
         # make a dictionary of category: value
         mapping_dict = {val: idx for idx, val in enumerate(unique_values)}
         
-        # Map the values back to the column using .loc[]
+        # Replace col val with idx
         each_df[each_col] = each_df[each_col].map(mapping_dict)
         
-        # Apply a value for each one
+        # Save dict to text_values_dict tracker
         text_values_dict['categorical'][each_col] = mapping_dict
 
+# QC
 print(df_train_ML.shape, df_valid_ML.shape, df_test_ML.shape)
 
 # scale features
@@ -673,16 +701,15 @@ df_test_ML_scaled = df_test_ML.copy()
 # initialize scaler
 scaler = StandardScaler()
 
-
 # define feature and target
 # regression
 target_name_reg = df_train_regressions_scaled.columns[0]
 features_name_reg = df_train_regressions_scaled.columns[1:]
 
-# fit and transform train - regression
+# scale train features - regression
 features_train_regressions_scaled = scaler.fit_transform(df_train_regressions_scaled[features_name_reg])
 
-# apply scaler to valid and test
+# apply same scaler to valid and test features
 feature_valid_regressions_scaled = scaler.transform(df_valid_regressions_scaled[features_name_reg])
 feature_test_regressions_scaled = scaler.transform(df_test_regressions_scaled[features_name_reg])
 
@@ -693,32 +720,28 @@ feature_test_regressions_scaled = scaler.transform(df_test_regressions_scaled[fe
 target_name_ML = df_train_ML_scaled.columns[0]
 features_name_ML = df_train_ML_scaled.columns[1:]
 
-# fit and transform train - ML
+# scale train features - ML
 feature_train_ML_scaled = scaler.fit_transform(df_train_ML_scaled[features_name_ML])
 
-# apply scaler to valid and test
+# apply scaler to valid and test features
 feature_valid_ML_scaled = scaler.transform(df_valid_ML_scaled[features_name_ML])
 feature_test_ML_scaled = scaler.transform(df_test_ML_scaled[features_name_ML])
 
-# vectorize y (x vectorized via scaling)
+# vectorize y (x already vectorized via scaling)
+# regression
 target_train_reg_vectorized = df_train_regressions_scaled['Price'].to_numpy()
 target_valid_reg_vectorized = df_valid_regressions_scaled['Price'].to_numpy()
 target_test_reg_vectorized = df_test_regressions_scaled['Price'].to_numpy()
 
+# ML
 target_train_ML_vectorized = df_train_ML_scaled['Price'].to_numpy()
 target_valid_ML_vectorized = df_valid_ML_scaled['Price'].to_numpy()
 target_test_ML_vectorized = df_test_ML_scaled['Price'].to_numpy()
 
-## fit
-# linear regression
-# linear_regression_model = DataModeler()
-# linear_regression_model.fit(
-#     train_features_vectorized=train_features_vectorized,
-#     train_target_vectorized=train_target_vectorized,
-#     model_type='regression',
-#     model_name='LinearRegression'
-#     )
+# Model training
+# tracking time to fit and predict all models
 
+# linear regression
 # initialize model
 lr_model = LinearRegression()
 
@@ -745,15 +768,6 @@ print(f'rmse: {linear_rmse}') # 2478.693608591162
 # rmse is high.
 
 # fit lgbm
-
-# lgbm_regression_model = DataModeler()
-# lgbm_regression_model.fit(
-#     train_features_vectorized=train_features_vectorized,
-#     train_target_vectorized=train_target_vectorized,
-#     model_type='regression',
-#     model_name='lgbm'
-#     )
-
 # initialize model
 lgb_model = lgb.LGBMRegressor()
 
@@ -779,15 +793,6 @@ print(f'rmse: {lgb_rmse}') # 2628.9684481111476
 # rmse is higher than linear regression
 
 # fit RandomForestClassifier
-
-# RandomForestClassifier_model = DataModeler()
-# RandomForestClassifier_model.fit(
-#     train_features_vectorized=train_features_vectorized,
-#     train_target_vectorized=train_target_vectorized,
-#     model_type='regression',
-#     model_name='RandomForestRegressor'
-#     )
-
 # initialize model
 rfr_model = RandomForestRegressor()
 
@@ -813,15 +818,6 @@ print(f'rmse: {rfr_rmse}') # 2868.6650270179457
 # rmse is higher than lgb
 
 # fit catboost
-# catboost_model = DataModeler()
-# catboost_model.fit(
-#     train_features_vectorized=train_features_vectorized,
-#     train_target_vectorized=train_target_vectorized,
-#     model_type='regression',
-#     model_name='catboost'
-#     )
-
-
 # initialize model
 cat_model = cb.CatBoostRegressor()
 
@@ -869,15 +865,6 @@ for value in range(50,100):
     print(f'max_depth: {value}, rmse: {rmse}') # 87
 
 # fit xgboost
-
-# xgboost_model = DataModeler()
-# xgboost_model.fit(
-#     train_features_vectorized=train_features_vectorized,
-#     train_target_vectorized=train_target_vectorized,
-#     model_type='regression',
-#     model_name='xgboost'
-#     )
-
 # initialize model
 xgb_model = xgb.XGBRegressor()
 
@@ -918,32 +905,32 @@ print(f'pred time: {cat_pred_time}')
 cat_rmse = np.sqrt(mean_squared_error(target_test_ML_vectorized, target_test_ML_pred))
 print(f'rmse: {cat_rmse}') # 2237.482413986722
 
-# observation
-# It did just about the same. 
+'''
+observation
+Cat did just about the same. 
 
-# analysis/conclusion
-# See Stats above.
-# Cat model scored the best (I know something is wrong, just don't know what, please help!) Training time was highest for xgb, while prediction time is extremely small for all.
-# I chose cat because it had the smallest RMSE, so I used it to optimize hyperparameters.
+analysis/conclusion
+See Stats above.
+Cat model scored the best. Training time was highest for xgb, while prediction time is extremely small for all.
+I chose cat for hyperparamter optimization because it had the smallest RMSE.
 
-# Conclusion: The task was to predict Price using available data. Features were reviewed one at a time and for each action in the following order:
+Conclusion: The task was to predict Price using available data. Features were reviewed one at a time and for each action in the following order:
 
-# Edit values
+Edit values
+either correct, or identify as missing Update data types
+eg. change date from string to datetime Remove missing data
+either relabel as 'missing' or set to NA (for dropping later) Remove irrelevant columns
+drop the column if having 1:1 unique values/row, or no variation. Feature engineering
+adding columns as a function of other columns. ie. creating a month or day column from a date column.
+the data was then processed as a whole with this following actions in this order: dropped duplicate rows Drop rows with missing values Moved target to first column encoding feature scaling/vectorization target vectorization
 
-# either correct, or identify as missing Update data types
-# eg. change date from string to datetime Remove missing data
-# either relabel as 'missing' or set to NA (for dropping later) Remove irrelevant columns
-# drop the column if having 1:1 unique values/row, or no variation. Feature engineering
-# adding columns as a function of other columns. ie. creating a month or day column from a date column.
-# the data was then processed as a whole with this following actions in this order: dropped duplicate rows Drop rows with missing values Moved target to first column encoding feature scaling/vectorization target vectorization
+Once both features and target were in a vectorized format, we fit the following models: LinearRegression RandomForestRegressor lgb.LGBMRegressor cb.CatBoostRegressor xgb.XGBRegressor
 
-# Once both features and target were in a vectorized format, we fit the following models: LinearRegression RandomForestRegressor lgb.LGBMRegressor cb.CatBoostRegressor xgb.XGBRegressor
+Training time, prediction time, and RMSE were measured for each model: linear_rmse: 2724.0585558060775 lgb_rmse: 2063.187614013004 rfr_rmse: 2176.8222270351207 cat_rmse: 2026.1914059369433 xgb_rmse:2236.4188514668167
 
-# Training time, prediction time, and RMSE were measured for each model: linear_rmse: 2724.0585558060775 lgb_rmse: 2063.187614013004 rfr_rmse: 2176.8222270351207 cat_rmse: 2026.1914059369433 xgb_rmse:2236.4188514668167
+linear_train/pred: (0.25896334648132324, 0.025099754333496094) lgb_train/pred: (2.220857858657837, 0.04092001914978027) rfr_train/pred: (1.5917150974273682, 0.04019355773925781) cat_train/pred: (1.093503475189209, 0.0024204254150390625) xgb_train/pred:(14.426959037780762, 0.003343343734741211)
 
-# linear_train/pred: (0.25896334648132324, 0.025099754333496094) lgb_train/pred: (2.220857858657837, 0.04092001914978027) rfr_train/pred: (1.5917150974273682, 0.04019355773925781) cat_train/pred: (1.093503475189209, 0.0024204254150390625) xgb_train/pred:(14.426959037780762, 0.003343343734741211)
+CAT had he lowest RMSE. It was further lowered to when hyperparameter: 'max_depth' was optimized at 4: max_depth: 4, rmse: 2008.1364553366802
 
-# CAT had he lowest RMSE. It was further lowered to when hyperparameter: 'max_depth' was optimized at 4: max_depth: 4, rmse: 2008.1364553366802
-
-# It was also the second fastest model to train, so I choose CAT as the best model.
-
+It was also the second fastest model to train, so I choose CAT as the best model.
+'''
