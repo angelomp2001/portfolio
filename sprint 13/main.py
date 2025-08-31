@@ -89,8 +89,6 @@ plt.ylabel("PACF")
 plt.show()
 
 
-
-
 # QC: arma_order_select_ic() function
 # df: find optimal number of lags
 res = arma_order_select_ic(y=df_target, max_ar=24, max_ma=0)
@@ -223,8 +221,7 @@ plt.show()
 # Estimate window of seasonality (s). ie. 12 if annual seasonality/cycle measured in months.
 # 24 for hours in a day
 
-# Fit SARIMAX: auto_arima(p_max,d,q_max,s)
-#model = auto_arima(df_train_target, seasonal=True, m=24, scoring='aic')
+# Fit SARIMAX:
 sarimax_model = SARIMAX(df_train_target, 
                        order=(1, 1, 1),          # Simple non-seasonal
                        seasonal_order=(1, 1, 1, 24))  # Simple seasonal with period 24
