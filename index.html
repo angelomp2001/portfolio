@@ -147,6 +147,15 @@
         <ul>
 
             <li>
+               <strong>Sweet Lift Taxi - Taxi Order Prediction</strong>
+                <ul>
+                    <li>Goal and Challenges: Predict the number of taxi orders at airports for the next hour to attract more drivers during peak hours. The challenge was to build a time series model that outperformed a simple baseline.</li>
+                    <li>Methods: The data was resampled and aggregated from minutes to hours. Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF) plots were used to determine AR and MA lags, revealing a 24-hour periodicity. Models were successively built to account for autocorrelation, moving average, differencing, and seasonality using SARIMAX.</li>
+                    <li>Results: The SARIMAX model, accounting for all factors, achieved a Root Mean Squared Error (RMSE) of approximately 45, which was the same as simply predicting the median value. Therefore, predicting the median was the simplest effective solution. A rolling median may be needed as time passes.</li>
+                </ul>
+            </li>              
+                 
+            <li>
                <strong>Rusty Bargain - Used Car Price Prediction App</strong>
                 <ul>
                     <li>Goal and Challenges: Develop an app to determine the market value of used cars by building a model that predicts price based on technical specifications and trim versions. The project emphasized prediction quality (RMSE), speed, and training time.</li>
