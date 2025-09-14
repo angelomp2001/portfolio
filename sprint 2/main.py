@@ -1,12 +1,17 @@
+'''
+Provide insights into the shopping habits of Instacart customers
+'''
+
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # datasets
-orders         = pd.read_csv('/datasets/instacart_orders.csv', sep=';')
-products       = pd.read_csv('/datasets/products.csv', sep=';')
-departments    = pd.read_csv('/datasets/departments.csv', sep=';')
-aisles         = pd.read_csv('/datasets/aisles.csv', sep=';')
-order_products = pd.read_csv('/datasets/order_products.csv', sep=';')
+orders         = pd.read_csv('sprint 2/instacart_orders.csv', sep=';')
+products       = pd.read_csv('sprint 2/products.csv', sep=';')
+departments    = pd.read_csv('sprint 2/departments.csv', sep=';')
+aisles         = pd.read_csv('sprint 2/aisles.csv', sep=';')
+order_products = pd.read_csv('sprint 2/order_products.csv', sep=';')
 
 # explore
 print(orders.head())
@@ -34,7 +39,6 @@ for name, df in dfs.items():
     print("\n" + "-"*50 + "\n")
 
 
-
 #Review each col for mislabeled missing data
 print("Review missing data:\n")
 for name, df in dfs.items():
@@ -53,7 +57,7 @@ for name, df in dfs.items():
 only orders, products and order_products have missing values.
 '''
 
-#MCAR analysis
+# MCAR analysis
 print("MCAR analysis")
 cols_with_missing_values = {
     'orders': ['days_since_prior_order'],
