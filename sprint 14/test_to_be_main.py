@@ -18,13 +18,27 @@ corpus_train, corpus_test, train_target, test_target = train_test_split(data_fra
 
 scores_dict = {'Test':[], 'normalize':[], 'lemmatize':[], 'stopword':[], 'tokenizer':[], 'model':[], 'rows':[], 'F1':[], 'ROC AUC':[], 'APS':[], 'Accuracy':[]}
 
+my_reviews = pd.DataFrame([
+    'I did not simply like it, not my kind of movie.',
+    'Well, I was bored and felt asleep in the middle of the movie.',
+    'I was really fascinated with the movie',    
+    'Even the actors looked really old and disinterested, and they got paid to be in the movie. What a soulless cash grab.',
+    'I didn\'t expect the reboot to be so good! Writers really cared about the source material',
+    'The movie had its upsides and downsides, but I feel like overall it\'s a decent flick. I could see myself going to see it again.',
+    'What a rotten attempt at a comedy. Not a single joke lands, everyone acts annoying and loud, even kids won\'t like this!',
+    'Launching on Netflix was a brave move & I really appreciate being able to binge on episode after episode, of this exciting intelligent new drama.'
+], columns=['review'])
+my_reviews_pos = pd.DataFrame([0,0,1,0,1,1,0,1], columns = ['pos'])
+
 other_params = {
     'features_train': corpus_train,
-    'features_test': corpus_test, 
+    'features_test': my_reviews, 
     'target_train': train_target,
-    'target_test': test_target,
+    'target_test': my_reviews_pos,
     'random_state': random_state
 }
+
+rows = 3000 #len(corpus_train)
 
 # Test 0
 scores_dict['Test'].append(0)
@@ -34,7 +48,7 @@ main_params = {
     'stopword': False,
     'tokenizer': None,
     'model': 'test_target_mean',
-    'rows': 4000 #len(corpus_train)
+    'rows': rows #len(corpus_train)
 }
 # Baseline prediction: predict the mean as probability, and threshold at 0.5 for class labels
 baseline_prob = np.full_like(test_target, fill_value=test_target.mean(), dtype=float)
@@ -57,7 +71,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'tf_idf',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows #len(corpus_train)
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -77,7 +91,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'tf_idf',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows #len(corpus_train)
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -97,7 +111,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'tf_idf',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows #len(corpus_train)
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -117,7 +131,7 @@ main_params = {
     'stopword': True,
     'tokenizer': 'tf_idf',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows #len(corpus_train)
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -137,7 +151,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -157,7 +171,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows 
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -177,7 +191,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -197,7 +211,7 @@ main_params = {
     'stopword': True,
     'tokenizer': 'BERT',
     'model': LogisticRegression,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -218,7 +232,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': LGBMClassifier,
-    'rows': 30 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -239,7 +253,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': LGBMClassifier,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -260,7 +274,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': LGBMClassifier,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -281,7 +295,7 @@ main_params = {
     'stopword': True,
     'tokenizer': 'BERT',
     'model': LGBMClassifier,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -302,7 +316,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': RandomForestClassifier,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -323,7 +337,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': RandomForestClassifier,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -344,7 +358,7 @@ main_params = {
     'stopword': False,
     'tokenizer': 'BERT',
     'model': RandomForestClassifier,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
@@ -365,7 +379,7 @@ main_params = {
     'stopword': True,
     'tokenizer': 'BERT',
     'model': RandomForestClassifier,
-    'rows': 3000 #len(corpus_train)
+    'rows': rows
 }
 stats = results(**main_params, **other_params)
 stats_dict = stats.to_dict(orient='records')[0]
