@@ -18,7 +18,7 @@ def model_1_evaluation(
 ):
 
     # get stop words
-    stop_words = list(stopwords.words('english'))
+    # stop_words = list(stopwords.words('english'))
 
     tf_idf = model
 

@@ -86,10 +86,9 @@ def evaluate_model(model, train_features, train_target, test_features, test_targ
         eval_stats[type]['Accuracy'] = metrics.accuracy_score(target, pred_target)
         eval_stats[type]['F1'] = metrics.f1_score(target, pred_target)
     
-    df_eval_stats = pd.DataFrame(eval_stats)
+    df_eval_stats = pd.DataFrame([eval_stats['test']], columns=['Accuracy', 'F1', 'APS', 'ROC AUC'])
     df_eval_stats = df_eval_stats.round(2)
-    df_eval_stats = df_eval_stats.reindex(index=('Accuracy', 'F1', 'APS', 'ROC AUC'))
     
-    print(df_eval_stats)
+    #df_eval_stats = df_eval_stats.reindex(index=('Accuracy', 'F1', 'APS', 'ROC AUC'))
     
-    return
+    return df_eval_stats

@@ -1,6 +1,6 @@
 # Model 4, custom features - NLTK, TF-IDF and LGBM
 from lightgbm import LGBMClassifier
-from text_preprocessing import text_preprocessing
+from lemmatization import lemmatization
 from evaluation_model import evaluate_model
 import numpy as np
 from nltk.corpus import stopwords
@@ -29,4 +29,4 @@ def model_4_evaluation_my_reviews(
 
     # print(f'accuracy: {np.mean(my_reviews_pos == my_reviews_pred_prob)}')
 
-    evaluate_model(model_4, tf_idf_train, train_target, tfidf_vectorizer_4.transform(my_reviews.apply(lambda x: text_preprocessing(x))), my_reviews_pos)
+    evaluate_model(model_4, tf_idf_train, train_target, tfidf_vectorizer_4.transform(my_reviews.apply(lambda x: lemmatization(x))), my_reviews_pos)

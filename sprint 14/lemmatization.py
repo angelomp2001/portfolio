@@ -4,7 +4,7 @@ import spacy
 nlp = spacy.load('en_core_web_sm', disable=['parser', 'ner'])
 
 # load the small English model
-def text_preprocessing(text):
+def lemmatization(text):
     
     doc = nlp(text)
     #tokens = [token.lemma_ for token in doc if not token.is_stop]

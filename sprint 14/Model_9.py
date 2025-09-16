@@ -1,9 +1,4 @@
-# Model 9 - BERT
-import transformers
-import torch
-import numpy as np
-import math
-from tqdm import tqdm
+# Model 9 - BERT and LR
 from BERT_text_to_embeddings import BERT_text_to_embeddings
 from sklearn.linear_model import LogisticRegression
 from evaluation_model import evaluate_model
@@ -16,7 +11,6 @@ def model_9_evaluation(
         test_target,
         rows
 ):
-
     # set rows to 4 to speed up the training
     BERT_train_rows = rows
 

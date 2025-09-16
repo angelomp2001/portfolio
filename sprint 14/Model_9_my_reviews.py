@@ -2,7 +2,7 @@
 from evaluation_model import evaluate_model
 from BERT_text_to_embeddings import BERT_text_to_embeddings
 from sklearn.linear_model import LogisticRegression
-import numpy as np
+
 
 def model_9_evaluation_my_reviews(
         corpus_train,
@@ -27,7 +27,7 @@ def model_9_evaluation_my_reviews(
     my_reviews_features_9 = BERT_text_to_embeddings(my_reviews[:BERT_train_rows], disable_progress_bar=True)
 
     model_9 = LogisticRegression(random_state = 12345)
-    # model_9.fit(train_features_9, train_target[:BERT_train_rows])
+    model_9.fit(train_features_9, train_target[:BERT_train_rows])
     # my_reviews_pred_prob = model_9.predict_proba(my_reviews_features_9)[:, 1]
 
 
@@ -37,4 +37,4 @@ def model_9_evaluation_my_reviews(
 
     # print(f'accuracy: {np.mean(my_reviews_pos == my_reviews_pred_prob)}')
 
-    evaluate_model(model_9, train_features_9, train_target, my_reviews_features_9, my_reviews_pos)
+    evaluate_model(model_9, train_features_9, train_target[:BERT_train_rows], my_reviews_features_9, my_reviews_pos)

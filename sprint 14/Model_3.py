@@ -1,6 +1,6 @@
 from sklearn.linear_model import LogisticRegression
 from evaluation_model import evaluate_model
-from text_preprocessing import text_preprocessing
+from lemmatization import lemmatization
 
 
 def model_3_evaluation(
@@ -23,9 +23,9 @@ def model_3_evaluation(
     train_target_small = train_target[:rows]
     test_target_small = test_target[:rows]
 
-    # preprocess the text data
-    corpus_train_norm = [text_preprocessing(text) for text in corpus_train_small]
-    corpus_test_norm = [text_preprocessing(text) for text in corpus_test_small]
+    # lemmatization
+    corpus_train_norm = [lemmatization(text) for text in corpus_train_small]
+    corpus_test_norm = [lemmatization(text) for text in corpus_test_small]
 
     # fit and transform the training data, transform the test data
     tf_idf_train = tf_idf.fit_transform(corpus_train_norm)

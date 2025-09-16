@@ -2,7 +2,6 @@
 import math
 import numpy as np
 import pandas as pd
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
@@ -34,10 +33,8 @@ tqdm.pandas()
 df_reviews = pd.read_csv('sprint 14/imdb_reviews.tsv', sep='\t', dtype={'votes': 'Int64'})
 
 # EDA
-
-
 # Normalization
-normalize_text(df= df_reviews, column='review')
+df_reviews['review_norm'] = normalize_text(series= df_reviews['review']) # df_reviews['review_norm']
 
 # Map sentiment labels to numerical values
 sp_dict = {'neg': 0, 'pos': 1}
@@ -70,20 +67,20 @@ tf_idf = TfidfVectorizer(
 
 # Model 1 - NLTK, TF-IDF and LR
 print('Model 1 - NLTK, TF-IDF and LR')
-#model_1_evaluation(tf_idf, corpus_train, corpus_test, train_target, test_target)
+model_1_evaluation(tf_idf, corpus_train, corpus_test, train_target, test_target)
 
 # Model 3 - spaCy, TF-IDF and LR
 print('Model 3 - NLTK, TF-IDF and RF')
-#model_3_evaluation(tf_idf, corpus_train, corpus_test, train_target, test_target)
+model_3_evaluation(tf_idf, corpus_train, corpus_test, train_target, test_target)
 
 
 # Model 4 - spaCy, TF-IDF and LGBMClassifier
 print('Model 4 - NLTK, TF-IDF and LGBMClassifier')
-#model_4_evaluation(tf_idf,corpus_train, corpus_test, train_target, test_target, rows = 4000)
+model_4_evaluation(tf_idf,corpus_train, corpus_test, train_target, test_target, rows = 4000)
 
 # Model 9 - BERT
 print('Model 9 - BERT and LR')
-#model_9_evaluation(corpus_train, corpus_test, train_target, test_target, rows = 40)
+model_9_evaluation(corpus_train, corpus_test, train_target, test_target, rows = 40)
 
 # my own reviews
 print('My reviews')
@@ -100,28 +97,28 @@ my_reviews = pd.DataFrame([
 ], columns=['review'])
 
 print(my_reviews.head())
-normalize_text(df= my_reviews, column='review')
+my_reviews_norm = normalize_text(series= my_reviews['review'])
 
 # true sentiment labels for my reviews, just for the sake of having some way to evaluate the models
-my_reviews_pos = [0,0,1,0,1,1,0,1] # pd.DataFrame([0,0,1,0,1,1,0,1], columns=['pos'])
+my_reviews_pos = pd.Series([0,0,1,0,1,1,0,1], name = 'pos') # pd.DataFrame([0,0,1,0,1,1,0,1], columns=['pos'])
 
 # Model 2, custom features - NLTK, TF-IDF and LR
 print('Model 2 - NLTK, TF-IDF and LR')
-# model_2_evaluation(corpus_train, train_target, my_reviews, my_reviews_pos)
+#model_2_evaluation(corpus_train=corpus_train,train_target= train_target,my_reviews= my_reviews['review'],my_reviews_pos= my_reviews_pos)
 
 # Model 3, custom features - NLTK, TF-IDF and RF
 print('Model 3 - NLTK, TF-IDF and RF')
-model_3_evaluation_my_reviews(corpus_train, train_target, my_reviews, my_reviews_pos)
+#model_3_evaluation_my_reviews(corpus_train, train_target, my_reviews['review'], my_reviews_pos)
 
 
 # Model 4, custom features - NLTK, TF-IDF and LGBMClassifier
 print('Model 4 - NLTK, TF-IDF and LGBMClassifier')
-model_4_evaluation_my_reviews(corpus_train, train_target, my_reviews, my_reviews_pos)
+# model_4_evaluation_my_reviews(corpus_train, train_target, my_reviews['review'], my_reviews_pos)
 
 
 # Model 9, custom features - BERT and LR
 print('Model 9 - BERT and LR')
-model_9_evaluation_my_reviews(corpus_train, train_target, my_reviews, my_reviews_pos, rows = 4)
+model_9_evaluation_my_reviews(corpus_train, train_target, my_reviews['review'], my_reviews_pos, rows = 400)
 
 # Conclusions
 '''

@@ -16,5 +16,4 @@ def train_test_split(data_frame: pd.DataFrame, features_list: list, target_colum
 
     data_frame.drop('ds_part', axis = 1 , inplace = True)
 
-    print(f'output: corpus_train, corpus_test, train_target, test_target')
     return corpus_train, corpus_test, train_target, test_target
