@@ -1,3 +1,13 @@
+'''
+This script allows for running multiple tests with different combinations of:
+- Training and testing datasets
+- Text normalization (True/False)
+- Lemmatization (True/False)
+- Stopword removal (True/False)
+- Tokenization method (TF-IDF/BERT)
+- Predictive model (Logistic Regression, LGBMClassifier, RandomForestClassifier)
+The results of each test are saved in 'output.csv' for later analysis.
+'''
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMClassifier
@@ -7,7 +17,7 @@ from train_test_split import train_test_split
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, roc_auc_score, average_precision_score
 import numpy as np
 
-from results import results
+from output import results
 
 df_reviews = pd.read_csv('sprint 14/imdb_reviews.tsv', sep='\t', dtype={'votes': 'Int64'})
 
@@ -28,17 +38,17 @@ my_reviews = pd.DataFrame([
     'What a rotten attempt at a comedy. Not a single joke lands, everyone acts annoying and loud, even kids won\'t like this!',
     'Launching on Netflix was a brave move & I really appreciate being able to binge on episode after episode, of this exciting intelligent new drama.'
 ], columns=['review'])
-my_reviews_pos = pd.DataFrame([0,0,1,0,1,1,0,1], columns = ['pos'])
+my_reviews_pos = pd.Series([0,0,1,0,1,1,0,1], name = 'pos')
 
 other_params = {
     'features_train': corpus_train,
-    'features_test': my_reviews, 
+    'features_test': my_reviews['review'], # corpus_test
     'target_train': train_target,
-    'target_test': my_reviews_pos,
+    'target_test': my_reviews_pos, # test_target
     'random_state': random_state
 }
 
-rows = 3000 #len(corpus_train)
+rows = len(corpus_train)
 
 # Test 0
 scores_dict['Test'].append(0)
@@ -48,18 +58,20 @@ main_params = {
     'stopword': False,
     'tokenizer': None,
     'model': 'test_target_mean',
-    'rows': rows #len(corpus_train)
+    'rows': rows 
 }
 # Baseline prediction: predict the mean as probability, and threshold at 0.5 for class labels
 baseline_prob = np.full_like(test_target, fill_value=test_target.mean(), dtype=float)
 baseline_pred = (baseline_prob >= 0.5).astype(int)
 
+# create dictionary entry for baseline
 {scores_dict[key].append(main_params[key]) for key in main_params.keys()}
 scores_dict['F1'].append(round(f1_score(test_target, baseline_pred),2))
 scores_dict['ROC AUC'].append(round(roc_auc_score(test_target, baseline_prob),2))
 scores_dict['APS'].append(round(average_precision_score(test_target, baseline_prob),2))
 scores_dict['Accuracy'].append(round(accuracy_score(test_target, baseline_pred),2))
-print(scores_dict)
+
+# convert dict to df and save to csv
 scores_df = pd.DataFrame(scores_dict)
 scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
 
@@ -78,8 +90,10 @@ stats_dict = stats.to_dict(orient='records')[0]
 
 {scores_dict[key].append(main_params[key]) for key in main_params.keys()}
 {scores_dict[key].append(stats_dict[key]) for key in stats_dict.keys()}
+
+# rename model from class type to string type
 scores_dict['model'][-1] = main_params['model'].__name__
-print(scores_dict)
+
 scores_df = pd.DataFrame(scores_dict)
 scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
 
@@ -390,4 +404,3 @@ scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
 scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
-
