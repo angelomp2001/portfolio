@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from main import df_reviews
+from main_v2 import df_reviews
 from normalize_textpip import normalize_text
 
 fig, axs = plt.subplots(2, 1, figsize=(16, 8))
@@ -36,6 +36,7 @@ ax.legend(lines, labels, loc='upper left')
 ax.set_title('Number of Reviews Over Years')
 
 fig.tight_layout()
+plt.show()
 
 # checking the distribution of number of reviews per movie with the exact counting and KDE (just to learn how it may differ from the exact counting)
 fig, axs = plt.subplots(1, 2, figsize=(16, 5))
@@ -55,6 +56,7 @@ ax.set_title('KDE Plot of #Reviews Per Movie')
 fig.tight_layout()
 
 df_reviews['pos'].value_counts()
+plt.show()
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -73,6 +75,7 @@ ax.set_ylim([0, 5000])
 ax.set_title('The test set: distribution of ratings')
 
 fig.tight_layout()
+plt.show()
 
 fig, axs = plt.subplots(2, 2, figsize=(16, 8), gridspec_kw=dict(width_ratios=(2, 1), height_ratios=(1, 1)))
 
@@ -109,3 +112,4 @@ ax.legend()
 ax.set_title('The test set: distribution of different polarities per movie')
 
 fig.tight_layout()
+plt.show()

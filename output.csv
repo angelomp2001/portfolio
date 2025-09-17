@@ -34,3 +34,9 @@
 14,True,False,False,BERT,RandomForestClassifier,3000,0.86,0.88,0.92,0.88
 15,True,True,False,BERT,RandomForestClassifier,3000,0.67,1.0,1.0,0.75
 16,True,True,True,BERT,RandomForestClassifier,3000,0.67,1.0,1.0,0.75
+0,False,False,False,,test_target_mean,23796,0.0,0.5,0.5,0.5
+1,False,False,False,tf_idf,LogisticRegression,23796,0.67,0.94,0.95,0.75
+2,True,False,False,tf_idf,LogisticRegression,23796,0.67,0.94,0.95,0.75
+0,False,False,False,,test_target_mean,23796,0.0,0.5,0.5,0.5
+1,False,False,False,tf_idf,LogisticRegression,23796,0.67,0.94,0.95,0.75
+2,True,False,False,tf_idf,LogisticRegression,23796,0.67,0.94,0.95,0.75

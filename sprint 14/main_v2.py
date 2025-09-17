@@ -17,7 +17,7 @@ from train_test_split import train_test_split
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, roc_auc_score, average_precision_score
 import numpy as np
 
-from output import results
+from results import results
 
 df_reviews = pd.read_csv('sprint 14/imdb_reviews.tsv', sep='\t', dtype={'votes': 'Int64'})
 
@@ -61,11 +61,14 @@ main_params = {
     'rows': rows 
 }
 # Baseline prediction: predict the mean as probability, and threshold at 0.5 for class labels
-baseline_prob = np.full_like(test_target, fill_value=test_target.mean(), dtype=float)
+baseline_prob = pd.Series(int(train_target.mean()), index =test_target.index) 
 baseline_pred = (baseline_prob >= 0.5).astype(int)
 
-# create dictionary entry for baseline
-{scores_dict[key].append(main_params[key]) for key in main_params.keys()}
+# copy main_params to scores_dict
+for key in main_params:
+    scores_dict[key].append(main_params[key])
+
+# calculate and append metrics to scores_dict
 scores_dict['F1'].append(round(f1_score(test_target, baseline_pred),2))
 scores_dict['ROC AUC'].append(round(roc_auc_score(test_target, baseline_prob),2))
 scores_dict['APS'].append(round(average_precision_score(test_target, baseline_prob),2))
