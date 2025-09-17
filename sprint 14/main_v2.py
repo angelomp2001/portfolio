@@ -76,7 +76,7 @@ scores_dict['Accuracy'].append(round(accuracy_score(test_target, baseline_pred),
 
 # convert dict to df and save to csv
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 1
 scores_dict['Test'].append(1)
@@ -98,7 +98,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 2
 scores_dict['Test'].append(2)
@@ -118,7 +118,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 3
 scores_dict['Test'].append(3)
@@ -138,7 +138,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 4
 scores_dict['Test'].append(4)
@@ -158,7 +158,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 5
 scores_dict['Test'].append(5)
@@ -178,7 +178,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 6
 scores_dict['Test'].append(6)
@@ -198,7 +198,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 7
 scores_dict['Test'].append(7)
@@ -218,7 +218,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 # Test 8
 scores_dict['Test'].append(8)
@@ -238,7 +238,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 9
@@ -259,7 +259,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 10
@@ -280,7 +280,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 11
@@ -301,7 +301,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 12
@@ -322,7 +322,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 13
@@ -343,7 +343,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 14
@@ -364,7 +364,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 15
@@ -385,7 +385,7 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
 
 
 # Test 16
@@ -406,4 +406,4 @@ stats_dict = stats.to_dict(orient='records')[0]
 scores_dict['model'][-1] = main_params['model'].__name__
 print(scores_dict)
 scores_df = pd.DataFrame(scores_dict)
-scores_df.iloc[[-1]].to_csv('output.csv', mode='a', header=False, index=False)
+scores_df.iloc[[-1]].to_csv('sprint 14/output.csv', mode='a', header=False, index=False)
