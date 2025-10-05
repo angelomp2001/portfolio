@@ -147,6 +147,15 @@
         <ul>
 
             <li>
+               <strong>Film Junky Union - Movie Review Sentiment Analysis</strong>
+                <ul>
+                    <li>Goal and Challenges: Develop a system to automatically detect negative movie reviews using a dataset of IMDB reviews with polarity labels. The model needs to achieve an F1 score of at least 0.85.</li>
+                    <li>Methods: Models were trained with text preprocessing techniques, including stopword removal and lemmatization, and different classifiers such as Logistic Regression and LGBMClassifier were tested. Performance was evaluated using Accuracy, F1-score, Average Precision Score (APS), and Receiver Operating Characteristic Area Under the Curve (ROC AUC) on training and test datasets.</li>
+                    <li>Results: Logistic Regression with stopword removal achieved high performance (Accuracy: 0.94/0.88, F1: 0.94/0.88, APS: 0.98/0.95, ROC AUC: 0.98/0.95). Lemmatization reduced performance. LGBMClassifier overfitted the training data.</li>
+                </ul>
+            </li>
+            
+            <li>
                <strong>Sweet Lift Taxi - Taxi Order Prediction</strong>
                 <ul>
                     <li>Goal and Challenges: Predict the number of taxi orders at airports for the next hour to attract more drivers during peak hours. The challenge was to build a time series model that outperformed a simple baseline.</li>
