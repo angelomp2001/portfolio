@@ -147,6 +147,15 @@
         <ul>
 
             <li>
+               <strong>Good Seed Supermarket - Age Verification for Alcohol Sales</strong>
+                <ul>
+                    <li>Goal and Challenges: Evaluate if Data Science can help the supermarket chain adhere to alcohol laws by developing a model to verify people's age from checkout camera images.</li>
+                    <li>Methods: A computer vision model was trained to estimate age from images of customers buying alcohol. Model performance on training and validation datasets was monitored.</li>
+                    <li>Results: After 20 epochs, the model exhibited overfitting, with significantly higher performance on the training data compared to the validation data. The model's average error of 7-8 years in age estimation was deemed potentially unacceptable for the client's needs. A binary classification model (under 21 vs. 21 and older) was suggested as a potentially more accurate and suitable alternative. Computer vision might be better for identifying items in the cart.</li>
+                </ul>
+            </li>
+
+            <li>
                <strong>Film Junky Union - Movie Review Sentiment Analysis</strong>
                 <ul>
                     <li>Goal and Challenges: Develop a system to automatically detect negative movie reviews using a dataset of IMDB reviews with polarity labels. The model needs to achieve an F1 score of at least 0.85.</li>
