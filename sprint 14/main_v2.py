@@ -1,4 +1,6 @@
 '''
+Objective: test various models on binary outcome (sentinement analysis: positive/negative)
+
 This script allows for running multiple tests with different combinations of:
 - Training and testing datasets
 - Text normalization (True/False)
@@ -6,8 +8,10 @@ This script allows for running multiple tests with different combinations of:
 - Stopword removal (True/False)
 - Tokenization method (TF-IDF/BERT)
 - Predictive model (Logistic Regression, LGBMClassifier, RandomForestClassifier)
-The results of each test are saved in 'output.csv' for later analysis.
+The results of each test are saved in 'output.csv'.
 '''
+
+# libraries
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMClassifier
@@ -19,15 +23,16 @@ import numpy as np
 
 from results import results
 
+# load data
 df_reviews = pd.read_csv('sprint 14/imdb_reviews.tsv', sep='\t', dtype={'votes': 'Int64'})
 
+# set random seed
 random_state = 12345
 
-# Train/test split
-corpus_train, corpus_test, train_target, test_target = train_test_split(data_frame=df_reviews, features_list='review', target_column_name = 'pos')
-
+# initialize scores
 scores_dict = {'Test':[], 'normalize':[], 'lemmatize':[], 'stopword':[], 'tokenizer':[], 'model':[], 'rows':[], 'F1':[], 'ROC AUC':[], 'APS':[], 'Accuracy':[]}
 
+# my custom test text and answers
 my_reviews = pd.DataFrame([
     'I did not simply like it, not my kind of movie.',
     'Well, I was bored and felt asleep in the middle of the movie.',
@@ -40,6 +45,13 @@ my_reviews = pd.DataFrame([
 ], columns=['review'])
 my_reviews_pos = pd.Series([0,0,1,0,1,1,0,1], name = 'pos')
 
+# Train/test split
+corpus_train, corpus_test, train_target, test_target = train_test_split(data_frame=df_reviews, features_list='review', target_column_name = 'pos')
+
+# set row for testing purposes.
+rows = len(corpus_train)
+
+# parameters that will stay the same between tests
 other_params = {
     'features_train': corpus_train,
     'features_test': my_reviews['review'], # corpus_test
@@ -47,8 +59,6 @@ other_params = {
     'target_test': my_reviews_pos, # test_target
     'random_state': random_state
 }
-
-rows = len(corpus_train)
 
 # Test 0
 scores_dict['Test'].append(0)

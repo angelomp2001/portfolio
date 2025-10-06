@@ -1,4 +1,6 @@
-# initialization
+'''facial recognition model to predict a person's age'''
+
+# libraries
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -26,7 +28,7 @@ labels['real_age'].hist()
 labels.drop('file_name', axis = 1, inplace = True)
 print(labels.head())
 
-# sample images
+# view sample images
 sample = 20
 rng = np.random.default_rng()
 random_sample =[int(rng.uniform(low = 0, high = 1000)) for _ in range(0,sample)]
@@ -105,13 +107,8 @@ def load_test(path, target_size, validation_split,batch_size = 16,  seed = 12345
 
     return test_gen_flow
 
-# build model
-def create_model(input_shape):
-    
-    """
-    It defines model
-    """
-    
+# Define model (ResNet50)
+def create_model(input_shape):  
     backbone = ResNet50(weights='imagenet', 
                         input_shape=input_shape,
                         include_top=False)
