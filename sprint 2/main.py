@@ -32,3 +32,6 @@ remove_duplicates(order_products)
 
 # verify that col values make sense
 verify_data(orders)
+
+if __name__ == '__main__':
+    main()
