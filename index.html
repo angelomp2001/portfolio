@@ -147,6 +147,15 @@
         <ul>
 
             <li>
+               <strong>Interconnect Telecom - Customer Churn Prediction</strong>
+                <ul>
+                    <li>Goal and Challenges: Forecast customer churn to enable targeted promotional offers and special plan options. The challenge was to build a predictive model using customer data, including plan and contract information.</li>
+                    <li>Methods: Data was downloaded, preprocessed (handling missing values, correcting data types), and merged. Feature engineering was performed, and data was vectorized. Various models were tested, and the best model was chosen based on the Area Under the Receiver Operating Characteristic curve (AUC-ROC).</li>
+                    <li>Results: The CatBoostClassifier was selected as the best model due to its high test AUC (0.920) and relatively small difference from the training AUC (0.980), suggesting minimal overfitting. Although other models showed overfitting, CatBoostClassifier's performance balance made it the preferred choice.</li>
+                </ul>
+            </li>
+            
+            <li>
                <strong>Good Seed Supermarket - Age Verification for Alcohol Sales</strong>
                 <ul>
                     <li>Goal and Challenges: Evaluate if Data Science can help the supermarket chain adhere to alcohol laws by developing a model to verify people's age from checkout camera images.</li>
