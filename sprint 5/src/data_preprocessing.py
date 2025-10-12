@@ -498,3 +498,221 @@ def n_unique_platforms(df):
 def name_platform_total_sales(df):
     return df.groupby(['name', 'platform'])['total_sales'].sum().reset_index()
 
+def compare_name_total_sales_x_platform(df):
+    compare_name_total_sales_x_platform = (
+        name_multi_platform_total_sales.pivot(
+            index = 'name',
+            columns = 'platform',
+            values = 'total_sales'
+        )
+    )
+    compare_name_total_sales_x_platform = compare_name_total_sales_x_platform.fillna(value = 0)
+    print(compare_name_total_sales_x_platform.head())
+    return compare_name_total_sales_x_platform
+
+def genre_performance(df):
+    genre =  df.groupby('genre')['total_sales'].sum().sort_values(ascending = False)
+
+
+    print(genre.head())
+
+    # genre distribution
+    plt.figure(figsize=(50, 10))
+    genre.plot(
+        kind = 'bar',
+        ylabel = 'total_sales'
+    )
+    plt.xticks(
+        rotation = 0,
+        fontsize=30)
+    plt.yticks(fontsize = 30)
+    plt.ylabel('total_sales',fontsize = 30)
+    plt.show()
+    return genre
+
+def market_share(genre):
+    market_size = genre.sum()
+    genre_df = genre.to_frame()
+    genre_df['percent'] = genre_df['total_sales']/market_size
+    for genre_name, percent in zip(genre_df.index, genre_df['percent']):
+    print(genre_name, round(percent,2)*100,"%")
+
+    # performance of the genre across time.
+    year_genre = df_relevant.groupby(['genre', 'year_of_release'])['total_sales'].agg(['sum']) #.agg() keeps it as df.
+    year_genre.reset_index(inplace = True)
+    year_genre = year_genre.rename(columns={'year_of_release': 'year','sum':'total_sales'})
+    year_genre['year'] = year_genre['year'].dt.strftime('%Y')
+    year_genre = year_genre.pivot(
+        index='year',
+        columns = 'genre',
+        values = 'total_sales'
+    )
+
+    #average genre sales per year (row)
+    print(year_genre['average_genre_sales_year'] = year_genre.mean(axis=1),'mean from column values')
+
+    #total sales of each genre across the years
+    print(year_genre.loc['total_sales'] = year_genre.drop('average_genre_sales_year', axis=1).sum(), "add row 'total Sales' by genre - excludes 'average_genre_sales_year' in calculation")
+
+    #average sales
+    print(year_genre.loc['average_sales'] = year_genre.drop('total_sales', axis=0).mean(axis=0), "average sales")
+
+    return year_genre
+
+def performance(platform, region, df):
+  #groupby row for col agg
+    agg_dict = {
+        'name' : 'count',
+        'platform' : 'count',
+        'year_of_release': 'count',
+        'genre' : 'count',
+        'na_sales':'sum',
+        'eu_sales':'sum',
+        'jp_sales':'sum',
+        'other_sales':'sum',
+        'critic_score':'sum',
+        'user_score':'sum',
+        'rating' : 'count',
+        'total_sales':'sum'
+    }
+
+    performance = df.groupby(['platform'])[region].agg(agg_dict[region])
+    print(f'{platform}:',performance.loc[platform])
+
+
+  def comparative_platform_analysis(df_relevant):
+    agg_dict = {
+    #    'name' : 'count',
+    #    'platform' : 'count',
+    #    'year_of_release': 'count',
+    #    'genre' : 'count',
+        'na_sales':'sum',
+        'eu_sales':'sum',
+        'jp_sales':'sum',
+        'other_sales':'sum',
+    #    'critic_score':'sum',
+    #    'user_score':'sum',
+    #    'rating' : 'count',
+    #    'total_sales':'sum'
+    }
+
+    platform_sales = df_relevant.groupby(['platform'])[['na_sales','eu_sales','jp_sales','other_sales']].agg(agg_dict)
+    print(platform_sales)
+
+    # Visualize cross-regional comparison for top platforms
+    # Create the heatmap
+    plt.figure(figsize=(15, 10))
+    plt.imshow(platform_sales, cmap='YlGnBu', interpolation='nearest')
+
+    # color bar
+    plt.colorbar()
+
+    # Set labels and title
+    plt.xlabel('Platform')
+    plt.ylabel(performance.index.name)
+    plt.title('Heatmap of Platform Sales by Region')
+
+    plt.xticks(
+        ticks=np.arange(len(performance.columns)),
+        labels=performance.columns,
+        rotation=45,
+        ha='right'
+    )
+    plt.yticks(
+        ticks=np.arange(len(performance.index)),
+        labels=performance.index
+    )
+
+    # Show the plot
+    plt.show()
+
+    return platform_sales
+
+def genre_performance_by_region(df_relevant):
+    agg_dict = {
+    #    'name' : 'count',
+    #    'platform' : 'count',
+    #    'year_of_release': 'count',
+    #    'genre' : 'count',
+        'na_sales':'sum',
+        'eu_sales':'sum',
+        'jp_sales':'sum',
+        'other_sales':'sum',
+    #    'critic_score':'sum',
+    #    'user_score':'sum',
+    #    'rating' : 'count',
+    #    'total_sales':'sum'
+    }
+
+    genre_performance_region = df_relevant.groupby(['genre'])[['na_sales','eu_sales','jp_sales','other_sales']].agg(agg_dict)
+    print(genre_performance_region)
+
+    # heatmap
+    plt.figure(figsize=(15, 10))
+    plt.imshow(genre_performance_region, cmap='YlGnBu', interpolation='nearest')
+
+    #  color bar
+    plt.colorbar()
+
+    # Set labels and title
+    plt.xlabel('Platform')
+    plt.ylabel(genre_performance_region.index.name)
+    plt.title('Heatmap of Platform Sales by Region')
+
+    plt.xticks(
+        ticks=np.arange(len(genre_performance_region.columns)),
+        labels=genre_performance_region.columns,
+        rotation=45,
+        ha='right'
+    )
+    plt.yticks(
+        ticks=np.arange(len(genre_performance_region.index)),
+        labels=genre_performance_region.index
+    )
+
+    # Show plot
+    plt.show()
+
+def esrb_impact(df_relevant):
+    agg_dict = {
+    #    'name' : 'count',
+    #    'platform' : 'count',
+    #    'year_of_release': 'count',
+    #    'genre' : 'count',
+        'na_sales':'sum',
+        'eu_sales':'sum',
+        'jp_sales':'sum',
+        'other_sales':'sum',
+    #    'critic_score':'sum',
+    #    'user_score':'sum',
+    #    'rating' : 'count',
+    #    'total_sales':'sum'
+    }
+
+    rating_performance = df_relevant.groupby(['rating'])[['na_sales','eu_sales','jp_sales','other_sales']].agg(agg_dict)
+    print(rating_performance)
+
+    # Analyze ESRB impact for each region
+    print(rating_performance)
+    return rating_performance
+
+def hypothesis_test(df_relevant):
+    # alpha = 0.05
+    #—Average user ratings of the Xbox One and PC platforms are the same.
+    xbox_one_query ="platform == 'XOne'"
+    pc_query =  "platform == 'PC'"
+    xbox_one_scores = df_relevant.query(xbox_one_query)['user_score']
+    pc_scores = df_relevant.query(pc_query)['user_score']
+
+    xbox_one_vs_pc_result = st.ttest_ind(xbox_one_scores, pc_scores, nan_policy='omit', equal_var=False)
+    print(f'xbox_one_vs_pc_result p-value: {xbox_one_vs_pc_result.pvalue}\n the mean scores are not the same - reject H0')
+
+
+    #Average user ratings for the Action and Sports genres are the same.
+    action_query = 'genre == "Action"'
+    sports_query = 'genre == "Sports"'
+    action_scores = df_relevant.query(action_query)['user_score']
+    sports_scores = df_relevant.query(sports_query)['user_score']
+
+    action_vs_sports_results = st.ttest_ind(action_scores, sports_scores, nan_policy='omit', equal_var=False)
+    print(f'action_vs_sports_results p-value: {action_vs_sports_results.pvalue}\n the mean scores are the same - accept H0')
