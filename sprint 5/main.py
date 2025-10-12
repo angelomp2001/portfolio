@@ -161,3 +161,6 @@ Average user ratings are different for xbox and PC
 average user rations are not different for action vs Sports genre
 we could do a much better analysis if we had price and units sold.
 '''
+
+if __name__ == "__main__":
+    pass
