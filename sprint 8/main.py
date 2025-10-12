@@ -1,21 +1,13 @@
 ''' Pick the best model for predicting binary classifier with a significant minority ratio, under various compensation strategies. 
 compensation strategies: 'balanced weights' logistic regression setting, upsampling, downsampling'''
 
-# libraries
-import pandas as pd
-import matplotlib.pyplot as plt
-from data_explorers import view, see
-from data_transformers import downsample, upsample, ordinal_encoder, missing_values, feature_scaler, categorical_encoder, data_splitter, data_transformer
-from best_model_picker import optimizer, best_model_picker
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-import sys
-import pdb
-import inspect
+
+
+from src import *
 
 # load data
-df = pd.read_csv('Churn.csv')
+path = 'data/Churn.csv'
+df = pd.load_data(path)
 
 ## EDA
 view(df)
