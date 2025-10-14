@@ -4,23 +4,13 @@ Time series: Predict tomorrow's demand for taxis
 Sweet Lift Taxi company has collected historical data on taxi orders at airports. To attract more drivers during peak hours, we need to predict the amount of taxi orders for the next hour. 
 '''
 
-#libraries
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-from statsmodels.graphics.tsaplots import plot_acf
-from statsmodels.graphics.tsaplots import plot_pacf
-from statsmodels.tsa.stattools import arma_order_select_ic
-import matplotlib.pyplot as plt
-from statsmodels.tsa.ar_model import AutoReg, ar_select_order
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.stattools import adfuller
-from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.statespace.sarimax import SARIMAX
+from src.data_preprocessing import *
 
 # load and view data
-df = pd.read_csv('taxi.csv')
+path = 'data/taxi.csv'
+df = load_data(path)
+
+# QC
 print(df.shape)
 print(df.head())
 print(df.tail())
@@ -29,32 +19,8 @@ print(df.isna().sum())
 print(df.columns)
 df['num_orders'].plot()
 
-# set index to dt
-df['datetime'] = pd.to_datetime(df['datetime'])
-df.set_index(df['datetime'], inplace=True)
-df.drop(columns='datetime', inplace=True)
-
-# group to 1 hour
-print(df.head())
-df['num_orders'].plot()
-plt.show()
-
-df = df.resample('1H').sum()
-df['num_orders'].plot()
-print(df.head())
-
-# df_train: Create lag features
-# df_train: Create calendar features
-df = (df
-        .assign(day=df.index.day,
-                month=df.index.month,
-                dayofweek=df.index.dayofweek))
-
-#QC
-print(df.head())
-
-# Dropna
-df = df.dropna(axis=0, how='all')
+# processing data
+df = preprocess_data(df)
 
 ## Analysis
 # Plot raw series
