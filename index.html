@@ -149,9 +149,9 @@
             <li>
                <strong>Interconnect Telecom - Customer Churn Prediction</strong>
                 <ul>
-                    <li>Goal and Challenges: Forecast customer churn to enable targeted promotional offers and special plan options. The challenge was to build a predictive model using customer data, including plan and contract information.</li>
+                    <li>Goal and Challenges: Forecast customer churn to enable targeted promotional offers and special plan options. The challenge was to build a predictive model using several separate sources of data.</li>
                     <li>Methods: Data was downloaded, preprocessed (handling missing values, correcting data types), and merged. Feature engineering was performed, and data was vectorized. Various models were tested, and the best model was chosen based on the Area Under the Receiver Operating Characteristic curve (AUC-ROC).</li>
-                    <li>Results: The CatBoostClassifier was selected as the best model due to its high test AUC (0.920) and relatively small difference from the training AUC (0.980), suggesting minimal overfitting. Although other models showed overfitting, CatBoostClassifier's performance balance made it the preferred choice.</li>
+                    <li>Results: The CatBoostClassifier was selected as the best model due to its high test AUC (0.920) and relatively small difference from the training AUC (0.980), suggesting minimal overfitting.</li>
                 </ul>
             </li>
             
@@ -169,7 +169,7 @@
                 <ul>
                     <li>Goal and Challenges: Develop a system to automatically detect negative movie reviews using a dataset of IMDB reviews with polarity labels. The model needs to achieve an F1 score of at least 0.85.</li>
                     <li>Methods: Models were trained with text preprocessing techniques, including stopword removal and lemmatization, and different classifiers such as Logistic Regression and LGBMClassifier were tested. Performance was evaluated using Accuracy, F1-score, Average Precision Score (APS), and Receiver Operating Characteristic Area Under the Curve (ROC AUC) on training and test datasets.</li>
-                    <li>Results: Logistic Regression with stopword removal achieved high performance (Accuracy: 0.94/0.88, F1: 0.94/0.88, APS: 0.98/0.95, ROC AUC: 0.98/0.95). Lemmatization reduced performance. LGBMClassifier overfitted the training data.</li>
+                    <li>Results: Logistic Regression with stopword removal achieved highest performance (Accuracy: 0.94/0.88, F1: 0.94/0.88, APS: 0.98/0.95, ROC AUC: 0.98/0.95). Lemmatization reduced performance. LGBMClassifier overfitted the training data.</li>
                 </ul>
             </li>
             
@@ -197,23 +197,23 @@
                 <ul>
                     <li>Goal and Challenges: Apply machine learning to solve several business tasks, including customer similarity analysis for marketing, insurance benefit prediction, and data protection. Challenges include assessing model performance compared to a baseline, predicting the number of benefits using linear regression, and ensuring data privacy without compromising model utility.</li>
                     <li>Methods: Explored k-Nearest Neighbors (kNN) for customer similarity, investigated the impact of feature scaling on kNN and linear regression, and considered data obfuscation techniques. Evaluated the effects of scaling on model performance and feature importance in linear regression. </li>
-                    <li>Results: Demonstrated that feature scaling significantly impacts kNN performance due to distance calculation dominance by larger-scale features. Scaling does not change RMSE for the Linear Regression, because any changes in the variables will be absorbed into the new coefficients. scaling is essential in regularized linear regression models. A technique for data obfuscation using an invertible matrix was proposed.</li>
+                    <li>Results: Demonstrated that feature scaling significantly impacts kNN performance due to distance calculation dominance by larger-scale features. Scaling does not change RMSE for the Linear Regression, because any changes in the variables will be absorbed into the new coefficients. A technique for data obfuscation using an invertible matrix was proposed.</li>
                 </ul>
             </li>    
             
             <li>
                <strong>Zyfra - Gold Recovery Optimization</strong>
                 <ul>
-                    <li>Goal and Challenges: Zyfra, a company specializing in efficiency solutions for heavy industry, aims to optimize the production of gold recovery from gold ore. The goal is to develop a machine learning model that predicts the amount of gold recovered from gold ore, leveraging data on extraction and purification. The challenge lies in the incomplete nature of the data, where some features are missing in the test set and the test set lacks target values. The model will help Zyfra optimize production and eliminate unprofitable parameters. </li>
-                    <li>Methods: I validated the data by applying formulae provided by the client to calculate some of the features. I also analyzed features that were present in the training data set, but missing from the test set. I standardized and normalize the data to ensure uniformity across features. I performed a Metal Concentration Analysis to measure the effect of purification stages. I also measured particle size distributionc to identify significant discrepancies. Finally, I checked total substance concentrations for abnormal values. I tested linear regression, decision tree, and random forest using cross-validation and against the Symmetric Mean Absolute Percentage Error (sMAPE) evaluation metric. </li>
-                    <li>Results: One region emerged as the optimal choice and the lowest risk of loss. While another region showed higher mean profit, it had a higher risk of loss. The analysis balanced potential returns against business constraints including the development budget and the requirement to keep risk below a specific threshold. A training and test dataset were provided, with a partial overlap in columns. The training set contained target values, while the test set lacked both targets and some features. The recovery column was validated, revealing no inconsistency (MAE = 0.00). Missing data were handled by dropping incomplete rows. Concentrations of Au, Ag, and Pb were analyzed, showing significant changes across purification stages. The feed particle size distribution between the training and test sets varied significantly for 14 features. Total substance concentrations were analyzed, and abnormal values were removed. Linear, decision tree, and random forest models were trained, with the random forest model achieving the best performance (final sMAPE: 1.863349032364476).</li>
+                    <li>Goal and Challenges: Develop a machine learning model that predicts the amount of gold recovered from gold ore, leveraging data on extraction and purification. The challenge lies in the incomplete nature of the data, where some features are missing in the test set and the test set lacks target values. The model will help Zyfra optimize production and eliminate unprofitable parameters.</li>
+                    <li>Methods: Formulae provided by the client was used to validate the data. Data was then standardized and normalized. I performed a Metal Concentration Analysis to measure the effect of purification stages. I also measured particle size distribution to identify significant discrepancies. Finally, I checked total substance concentrations for abnormal values. Linear regression, decision tree, and random forest were tested using cross-validation and against the Symmetric Mean Absolute Percentage Error (sMAPE) evaluation metric.</li>
+                    <li>Results: Random forest model achieving the best performance.</li>
                 </ul>
             </li>    
 
             <li>
                <strong>OilyGiant - Investment Risk of Loss Minimization</strong>
                 <ul>
-                    <li>Goal and Challenges: Identify the most profitable region for new oil well development by analyzing oil quality and reserve volumes across three regions. The challenge was to build predictive models for each region, calculate potential profits, and assess risks using bootstrapping to make an economically sound decision.  </li>
+                    <li>Goal and Challenges: Identify the most profitable region for new oil well development by analyzing oil quality and reserve volumes across three regions. The challenge was to build predictive models for each region, calculate potential profits, and assess risks using bootstrapping to make an economically sound decision.</li>
                     <li>Methods: Linear regression models were trained on data from three regions to predict oil reserve volumes. Bootstrapping with 1000 samples was used to estimate profit distributions and risk of losses. The top 200 wells from 500 exploration points were selected for development based on predicted reserves.</li>
                     <li>Results: One region emerged as the optimal choice and the lowest risk of loss. While another region showed higher mean profit, it had a higher risk of loss. The analysis balanced potential returns against business constraints including the development budget and the requirement to keep risk below a specific threshold.</li>
                 </ul>
@@ -222,23 +222,18 @@
             <li>
                <strong>Beta Bank - Customer Attrition Analysis</strong>
                 <ul>
-                    <li>Goal and Challenges: Determine which customers are most likely to exit next, so the client can focus on keeping them. Attrition was extremely low, so predicting who was next was hard.  </li>
-                    <li>Methods: Data sampling methods (upscaling, downscaling, class weight balancing) and parameter optimization were applied to three models and compared to predict attrition. </li>
-                    <li>Results: Downsampling was the most effective sampling method for improving model score.  Random Forest was the most accurate model by all metrics (Accuracy, Precision, Recall, F1, ROC-AUC, PR-AUC).</li>
+                    <li>Goal and Challenges: Determine which customers are most likely to exit next, so the client can focus on keeping them. Attrition was extremely low, so predicting who was next was hard.</li>
+                    <li>Methods: Data sampling methods (upscaling, downscaling, class weight balancing) and parameter optimization were applied to three models and compared to predict attrition.</li>
+                    <li>Results: Downsampling was the most effective sampling method for improving model score. Random Forest was the most accurate model by all metrics (Accuracy, Precision, Recall, F1, ROC-AUC, PR-AUC).</li>
                 </ul>
             </li>    
             <li>
                 <strong>Megaline - Revenue Analysis</strong>
                 <ul>
-                    <li>Goal and Challenges: Determine which of the prepaid phone plans brings in more
-                        revenue in order to adjust the advertising budget. The data was highly fragmented and a sampling
-                        was required due to the large data size.</li>
-                    <li>Methods: Hypothesis testing was used to determine differences between plans and
-                        customer characteristics. Data management techniques related to data joining and grouping.
-                        Aggregation functions were used to analyze revenue by both year and month.</li>
-                    <li>Results: 66% of users were on Surf (the cheaper plan). General usage behavior
-                        between plans (number of calls, call duration, number of messages, number of internet sessions,
-                        and overall data usage) across years and months were not statistically different.</li>
+                    <li>Goal and Challenges: Determine which of the prepaid phone plans brings in more revenue in order to adjust the advertising budget. The data was highly fragmented and a sampling was required due to the large data size.</li>
+                    <li>Methods: Hypothesis testing was used to determine differences between plans and customer characteristics. Data management techniques related to data joining and grouping. Aggregation functions were used to analyze revenue by both year and month.
+</li>
+                    <li>Results: 66% of users were on Surf (the cheaper plan). General usage behavior between plans (number of calls, call duration, number of messages, number of internet sessions, and overall data usage) across years and months were not statistically different.</li>
                 </ul>
             </li>
             <li>
