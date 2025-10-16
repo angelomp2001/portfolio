@@ -20,39 +20,25 @@ print(df.columns)
 df['num_orders'].plot()
 
 # processing data
-df = preprocess_data(df)
+df = preprocess_datatime_series(df, column_names='datetime')
+
+df = preprocess_num_orders(df, column_names=['num_orders'])
 
 ## Analysis
 # Plot raw series
 df_target = df['num_orders']
-df.plot(figsize=(20, 6))
-plt.show()
+plot_raw_series(df)
 
 # Plot Median
-df_target_median = df_target.median()
-pred_median = np.ones(len(df)) * df_target_median
-plt.plot(figsize=(20, 6))
-plt.plot(df.index, df_target, label='Raw Data', color='blue')
-plt.plot(df.index, pred_median, label='Median', color='red')
+plot_median(df, df_target)
 
-# Score RMSE (24)
-print('RMSE:', np.sqrt(mean_squared_error(df_target, pred_median))) # RMSE: 45.474613179669596
 
 # Plot ACF
-lags_to_check = 500
-fig, ax = plt.subplots(figsize=(20, 6)) 
-acf = plot_acf(x=df_target, lags=lags_to_check, ax=ax)
-plt.xlabel("Lags")
-plt.ylabel("ACF")
-plt.show()
+acf = acf_plot(df_target, lags_to_check=500)
 
 
 # Plot PACF
-fig, ax = plt.subplots(figsize=(20, 6)) 
-pacf = plot_pacf(x=df_target, lags=lags_to_check, ax=ax)
-plt.xlabel("Lags")
-plt.ylabel("PACF")
-plt.show()
+pacf = pacf_plot(df_target, lags_to_check=500)
 
 
 # QC: arma_order_select_ic() function
@@ -87,89 +73,24 @@ df_train, df_test = train_test_split(df, shuffle=False, test_size=0.1, random_st
 df_train_target = df_train['num_orders']
 df_test_target = df_test['num_orders']
 
-# Fit AR model with p
-ar_model = AutoReg(df_train_target, lags=lag_ar, seasonal=True)
-ar_model = ar_model.fit()
-
-# Predict AR
 start_value = len(df_train)  # = test.index[0]  First index of the test set 
 end_value = len(df_train) + len(df_test) - 1 # = test.index[-1] # Last index of the test set
-ar_pred = ar_model.predict(start=start_value, end=end_value, dynamic=False)
 
-# Plot AR
-plt.figure(figsize=(20, 6))
-plt.plot(df_test_target.index, ar_pred, color='blue', label='target_pred')
-plt.plot(df_test_target.index, df_test_target, color='red', label='target')
-plt.legend(loc="upper left")
-plt.xticks(rotation=90)
-plt.show()
+# Eval AR model with p
+ar_rmse_value = eval_ar(start_value, end_value, df_train, df_test, df_train_target, df_test_target, lag_ar)
 
-# Eval AR
-ar_rmse_value = np.sqrt(mean_squared_error(df_test_target, ar_pred))
-print(ar_rmse_value.round(3)) # 68.927
+# Fit MA model with q
+ma_rmse_value = eval_ma(start_value, end_value, df_train, df_test, df_train_target, df_test_target, lag_ma)
 
-# fit MA model with q
-ma_model = ARIMA(df_train_target, order=(lag_ma, 0, 0))
-ma_model = ma_model.fit()
 
-# predict MA
-ma_train = ma_model.predict(start=0, end=len(df_train), dynamic=False)
-ma_pred = ma_model.predict(start=start_value, end=end_value, dynamic=False)
-
-# Plot MA (q)
-plt.plot(df_test_target.index, ma_pred, color="blue", label="pred")
-plt.plot(df_test_target.index, df_test_target, color="red", label="test")
-plt.legend(loc="upper left")
-plt.xticks(rotation=90)
-plt.show()
-
-# Eval MA
-ar_rmse_value = np.sqrt(mean_squared_error(df_test_target, ma_pred))
-print(ar_rmse_value.round(3)) # 70.459
-
-# Fit ARMA model with (p,q)
-arma_model = ARIMA(df_train_target, order=(lag_ma, 0, lag_ar))
-arma_model = arma_model.fit()
-
-# Predict ARMA
-start_value = len(df_train)
-end_value = len(df_train) + len(df_test) - 1
-arma_pred = arma_model.predict(start=start_value, end=end_value, dynamic=False)
-
-# Plot ARMA
-plt.plot(df_test_target.index, arma_pred, color="blue", label="pred")
-plt.plot(df_test_target.index, df_test_target, color="red", label="test")
-plt.legend(loc="upper left")
-plt.xticks(rotation=90)
-plt.show()
-
-# Eval MA
-ar_rmse_value = np.sqrt(mean_squared_error(df_test_target, arma_pred))
-print(ar_rmse_value.round(3)) # RMSE: 46.076
-
+# Eval ARMA model with p and q
+ar_rmse_value = eval_arma(start_value, end_value, df_train, df_test, df_train_target, df_test_target, lag_ar, lag_ma)
 
 # Score stationary (d)
-# run the adfuller test to check for stationarity
-df_stationarityTest = adfuller(df_train_target, autolag='AIC')
-print("P-value: ", df_stationarityTest[1])
+df_stationarityTest = check_stationarity(df_train_target)
 
-# Fit ARIMA model (p,d,q)
-arima_model = ARIMA(df_train_target, order=(lag_ma, 1 , lag_ar))
-arima_model = arima_model.fit()
-
-# Predict ARIMA
-arima_pred = arima_model.predict(start=start_value, end=end_value, dynamic=False)
-
-# Plot ARIMA
-plt.plot(df_test_target.index, arima_pred, color='blue', label='pred')
-plt.plot(df_test_target.index, df_test_target, color='red', label='test')
-plt.legend(loc="upper left")
-plt.xticks(rotation=90)
-plt.show()
-
-# Eval ARIMA
-ar_rmse_value = np.sqrt(mean_squared_error(df_test_target, arima_pred))
-print(ar_rmse_value.round(3)) # RMSE: 52.218
+# Eval ARIMA model with p, d, q
+arima_rmse_value = eval_arima(start_value, end_value, df_train, df_test, df_train_target, df_test_target, lag_ar, lag_ma)
 
 # Plot decompose (trend, seasonality, residuals)
 decomposition = seasonal_decompose(df_train_target)
@@ -181,36 +102,13 @@ N = 3
 hours_per_day = 24
 months_in_period = N * hours_per_day
 
-decomposition.seasonal[0:months_in_period].plot()
-plt.show()
+plot_periodicity(decomposition, months_in_period)
 
 # Estimate window of seasonality (s). ie. 12 if annual seasonality/cycle measured in months.
 # 24 for hours in a day
 
-# Fit SARIMAX:
-sarimax_model = SARIMAX(df_train_target, 
-                       order=(1, 1, 1),          # Simple non-seasonal
-                       seasonal_order=(1, 1, 1, 24))  # Simple seasonal with period 24
-sarimax_fit = sarimax_model.fit()
-
-# # Predict SARIMAX
-predictions = sarimax_fit.predict(start=len(df_train), end=len(df_train)+len(df_test)-1, dynamic=False)
-df_test['predicted_num_orders'] = predictions
-
-# plot the results
-plt.figure(figsize=(12,6))
-plt.plot(df_train.index, df_train_target, label="Train")
-plt.plot(df_test.index, df_test_target, label="Test", color="blue")
-plt.plot(df_test.index, predictions, label="Predictions", color="red")
-plt.legend()
-plt.show()
-
-# # Eval SARIMAX
-rmse = np.sqrt(mean_squared_error(df_test_target, predictions))
-print(f"Test RMSE: {rmse:.2f}") # RMSE: 44.46
-
-# get info about the model
-sarimax_fit.summary()
+# Eval SARIMAX:
+rmse = eval_sarimax(df_train, df_test, df_train_target, df_test_target)
 
 # results
 
