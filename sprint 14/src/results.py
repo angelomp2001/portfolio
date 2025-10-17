@@ -1,8 +1,8 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
-from normalization import normalization
-from lemmatization import lemmatization
-from BERT_text_to_embeddings import BERT_text_to_embeddings
-from evaluation_model import evaluate_model
+from src.normalization import normalization
+from src.lemmatization import lemmatization
+from src.BERT_text_to_embeddings import BERT_text_to_embeddings
+from src.evaluation_model import evaluate_model
 
 def results(normalize, lemmatize, stopword, tokenizer, model, features_train, features_test, target_train, target_test, random_state, rows):
     # Apply normalization if specified
