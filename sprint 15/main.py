@@ -13,6 +13,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.keras.optimizers import Adam
 
+
+
 # load data
 image_path = r'/datasets/faces/final_files/'
 labels_path = r'/datasets/faces/labels.csv'
