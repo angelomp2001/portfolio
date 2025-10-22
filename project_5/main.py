@@ -136,7 +136,7 @@ print(genre_performance_region)
 rationg_performance = esrb_impact(df_relevant)
 
 #hypothesis testing
-hypothesis_testing(df_relevant)
+hypothesis_test(df_relevant)
 
 '''
 general conclusion
