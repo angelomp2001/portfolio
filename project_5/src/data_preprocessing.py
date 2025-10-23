@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats as st
 import matplotlib.pyplot as plt
-from IPython.display import display
+
 
 
 def load_data(path):
@@ -580,7 +580,7 @@ def performance(platform, region, df):
     print(f'{platform}:',performance.loc[platform])
 
 
-  def comparative_platform_analysis(df_relevant):
+def comparative_platform_analysis(df_relevant):
     agg_dict = {
     #    'name' : 'count',
     #    'platform' : 'count',
