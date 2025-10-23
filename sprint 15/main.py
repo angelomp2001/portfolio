@@ -13,12 +13,14 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.keras.optimizers import Adam
 
+from src.data_preprocessing import *
+
 
 
 # load data
-image_path = r'/datasets/faces/final_files/'
-labels_path = r'/datasets/faces/labels.csv'
-labels = pd.read_csv(labels_path, sep = ',')
+image_path = r'data/faces/'
+labels_path = r'data/faces/labels.csv'
+labels = load_data(labels_path)
 
 # EDA
 print(labels.head(15))
