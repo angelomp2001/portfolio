@@ -5,7 +5,6 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import pandas as pd
-import pandas as pd
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.resnet import ResNet50
