@@ -312,10 +312,14 @@ model.load_test(
     batch_size = 16,  
     seed = 12345)
 
-model.create_model(
-
-)
+model.create_model(input_shape)
 
 model.train_model(
-    
+    model, 
+    train_data, 
+    test_data, 
+    batch_size=None, 
+    epochs=20,
+    steps_per_epoch=None, 
+    validation_steps=None
 )
