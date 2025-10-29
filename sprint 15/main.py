@@ -60,6 +60,7 @@ def load_train(path, target_size, validation_split,batch_size = 16,  seed = 1234
     It loads the train part of dataset from path
     """
     
+    # create instance of Image generate with below parameters
     train_gen = ImageDataGenerator(
     validation_split=validation_split,
         rescale=1./255
@@ -70,6 +71,7 @@ def load_train(path, target_size, validation_split,batch_size = 16,  seed = 1234
         # rotation_range=90
     )
     
+    # generator from ImageDataGenerator instance to  load images from a path
     train_gen_flow = train_gen.flow_from_directory(
         path,
         target_size=target_size,
@@ -99,7 +101,7 @@ def load_test(path, target_size, validation_split,batch_size = 16,  seed = 12345
     )
     
     test_gen_flow = test_gen.flow_from_directory(
-        directory,
+        path,
         target_size=target_size,
         batch_size=batch_size,
         class_mode='sparse',
@@ -118,7 +120,7 @@ def create_model(input_shape):
     model = Sequential()
     model.add(backbone)
     model.add(GlobalAveragePooling2D())
-    model.add(Dense(1, activation='relu'))
+    model.add(Dense(1, activation='linear'))
 
     optimizer = Adam(learning_rate=0.0005)
     model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])

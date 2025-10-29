@@ -154,19 +154,44 @@ class DataCleaner:
 
 # Use_cases/Data_Modelling/
 class DataModeller:
-    def __init__(self):
-        self
-        pass
+    def __init__(self, target_size = (244, 244), mode = 'regression'):
+        self.target_size = target_size
+        self.input_shape = (target_size[0], target_size[1], 3)
+        self.train_data = None
+        self.test_data = None
+        self.model = None
+        self.mode = mode
+        self.class_mode = None
+        
+        if self.mode == 'regression':
+            class_mode = 'raw'
+        else:
+            class_mode = 'categorical' if self.mode == 'multiclass' else 'binary'
 
-    def load_train(self, path, target_size, validation_split,batch_size = 16,  seed = 12345):
-    
+        self.class_mode = class_mode
+
+
+    def load_data(
+            self, 
+            labels_df, 
+            image_path, 
+            x_col,
+            y_col,
+            target_size = (244, 244), 
+            validation_split = 0.2, 
+            batch_size = 16,  
+            seed = 12345):
         """
         It loads the train part of dataset from path
         """
+        self.target_size = target_size
+        self.input_shape = (target_size[0], target_size[1], 3)
+
         
+
         train_gen = ImageDataGenerator(
-        validation_split=validation_split,
-            rescale=1./255
+            validation_split = validation_split,
+            rescale = 1./255
             # horizontal_flip=True,
             # vertical_flip=True,
             # width_shift_range=0.2,
@@ -174,32 +199,22 @@ class DataModeller:
             # rotation_range=90
         )
         
-        train_gen_flow = train_gen.flow_from_directory(
-            path,
-            target_size=target_size,
-            batch_size=batch_size,
-            class_mode='sparse',
-            subset='training',
-            seed=seed
+        self.train_data = train_gen.flow_from_dataframe(
+            dataframe = labels_df,
+            directory = image_path,
+            x_col = x_col,
+            y_col = y_col,
+            target_size = target_size,
+            batch_size = batch_size,
+            class_mode = self.class_mode, #'sparse',
+            subset = 'training',
+            seed = seed
         )
+  
 
-        return train_gen_flow
-    
-    def load_test(
-            self, 
-            path, 
-            directory,
-            target_size, 
-            validation_split,
-            batch_size = 16,  
-            seed = 12345):
-    
-        """
-        It loads the validation/test part of dataset from path
-        """
-        
+        # test data:
         test_gen = ImageDataGenerator(
-        validation_split=validation_split,
+            validation_split = validation_split,
             rescale=1./255
             # horizontal_flip=True,
             # vertical_flip=True,
@@ -208,35 +223,50 @@ class DataModeller:
             # rotation_range=90
         )
         
-        test_gen_flow = test_gen.flow_from_directory(
-            directory,
-            target_size=target_size,
-            batch_size=batch_size,
-            class_mode='sparse',
-            subset='validation',
-            seed=seed
-        )    
-
-        return test_gen_flow
+        self.test_data = test_gen.flow_from_dataframe(
+            dataframe = labels_df,
+            directory = image_path,
+            x_col = x_col,
+            y_col = y_col,
+            target_size = target_size,
+            batch_size = batch_size,
+            class_mode = self.class_mode, #'sparse',
+            subset = 'validation',
+            seed = seed
+        ) 
     
     # Define model (ResNet50)
-    def create_model(self, input_shape):  
+    def create_model_ResNet50(self, n_classes = None):  
         backbone = ResNet50(weights='imagenet', 
-                            input_shape=input_shape,
+                            input_shape = self.input_shape,
                             include_top=False)
 
         model = Sequential()
         model.add(backbone)
         model.add(GlobalAveragePooling2D())
-        model.add(Dense(1, activation='relu'))
+
+        if self.mode == 'regression':
+            model.add(Dense(1, activation='linear'))
+            loss = 'mse'
+            metrics = ['mae']
+        elif self.mode == 'binary':
+            model.add(Dense(1, activation='sigmoid'))
+            loss = 'binary_crossentropy'
+            metrics = ['accuracy']
+        else:  # multiclass
+            model.add(Dense(n_classes, activation='softmax'))
+            loss = 'categorical_crossentropy'
+            metrics = ['accuracy']
+
+        model.add(Dense(1, activation='linear'))
 
         optimizer = Adam(learning_rate=0.0005)
-        model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
+        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-        return model
+        self.model = model
     
     # train model
-    def train_model(self, model, train_data, test_data, batch_size=None, epochs=20,
+    def train_model(self, batch_size=None, epochs=20,
                     steps_per_epoch=None, validation_steps=None):
 
         """
@@ -244,82 +274,75 @@ class DataModeller:
         """
         
         if steps_per_epoch is None:
-            steps_per_epoch = len(train_data)
+            steps_per_epoch = len(self.train_data)
             
         if validation_steps is None:
-            validation_steps = len(test_data)
+            validation_steps = len(self.test_data)
 
-        model.fit(train_data, 
-                validation_data=test_data,
-                batch_size=batch_size, epochs=epochs,
-                steps_per_epoch=steps_per_epoch,
-                validation_steps=validation_steps,
-                verbose=2)
+        self.model.fit(
+            self.train_data, 
+            validation_data=self.test_data,
+            batch_size=batch_size, epochs=epochs,
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
+            verbose=2)
 
-        return model
 
 
 # Main:
-# load data
-image_path = r'data/faces/'
-labels_path = r'data/faces/labels.csv'
-labels = DataLoader.from_csv(labels_path)
-image_file_paths = DataLoader.from_path(image_path)
+if __name__ == "__main__":
+    # load data
+    image_path = r'data/faces/'
+    labels_path = r'data/faces/labels.csv'
+    labels_df = DataLoader.from_csv(labels_path) # ['file_name','real_age']
+    image_file_paths = DataLoader.from_path(image_path)
 
-# EDA
-eda = DataStructureAnalyzer(labels)
-output = OutPut()
+    # EDA
+    eda = DataStructureAnalyzer(labels_df)
+    output = OutPut()
 
-# save the state of the df at the start
-start = eda.overview()
+    # save the state of the df at the start
+    start = eda.overview()
 
-# print missing
-output.to_console(eda.missing())
+    # print missing
+    output.to_console(eda.missing())
 
-# print dtypes
-output.to_console(eda.dtypes())
+    # print dtypes
+    output.to_console(eda.dtypes())
 
-# print nunique 
-output.to_console(eda.nunique())
+    # print nunique 
+    output.to_console(eda.nunique())
 
-# print cols as graphs
-output.to_console(labels).view()
+    # print cols as graphs
+    output.to_console(labels_df).view()
 
-# view images
-output.to_console(image_file_paths)
+    # view images
+    output.to_console(image_file_paths)
 
-# load cleaner
-edit = DataCleaner(labels)
+    # load cleaner
+    edit = DataCleaner(labels_df)
 
-# drop column
-edit.drop(['file_name'])
+    # drop column
+    # edit.drop(['file_name'])
 
-# model
-model = DataModeller()
+    # model
+    model = DataModeller()
 
-model.load_train(
-    image_path,
-    target_size = (244, 244),
-    validation_split = 0.2,
-    batch_size = 32,  
-    seed = 12345)
+    model.load_data(
+        labels_df = labels_df,
+        image_path = image_path,
+        x_col = labels_df.columns[0],
+        y_col = labels_df.columns[1],
+        target_size = (244, 244),
+        validation_split = 0.2,
+        batch_size = 32,  
+        seed = 12345)
 
-model.load_test(
-    image_path, 
-    directory = image_path,
-    target_size = (244, 244), 
-    validation_split = .2,
-    batch_size = 16,  
-    seed = 12345)
+    model.create_model_ResNet50(n_classes = None)
 
-model.create_model(input_shape)
-
-model.train_model(
-    model, 
-    train_data, 
-    test_data, 
-    batch_size=None, 
-    epochs=20,
-    steps_per_epoch=None, 
-    validation_steps=None
-)
+    model.train_model(
+        batch_size=None, 
+        epochs=20,
+        steps_per_epoch=None, 
+        validation_steps=None
+    )
