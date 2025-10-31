@@ -1,10 +1,12 @@
+'''Objective: find the best model to predict the binary outcome'''
+
 from libraries import *
 
 # Download data
-contract_df = pd.read_csv('contract.csv', sep = ',')
-internet_df = pd.read_csv('internet.csv', sep = ',')
-personal_df = pd.read_csv('personal.csv', sep = ',')
-phone_df = pd.read_csv('phone.csv', sep = ',')
+contract_df = pd.read_csv('data/contract.csv', sep = ',')
+internet_df = pd.read_csv('data/internet.csv', sep = ',')
+personal_df = pd.read_csv('data/personal.csv', sep = ',')
+phone_df = pd.read_csv('data/phone.csv', sep = ',')
 
 dfs = [contract_df, internet_df, personal_df, phone_df]
 
@@ -70,17 +72,17 @@ categorical_features = features.select_dtypes(include=['object']).columns.tolist
 
 # list of models
 list_of_models = [
-    LogisticRegression(max_iter=1000),
-    RandomForestClassifier(),
+    LogisticRegression(max_iter=1000, random_state=12345),
+    RandomForestClassifier(random_state=12345),
     KNeighborsClassifier(),
-    DecisionTreeClassifier(),
-    GradientBoostingClassifier(),
-    lgb.LGBMClassifier(),
-    xgb.XGBClassifier(),
-    CatBoostClassifier(verbose=0)
+    DecisionTreeClassifier(random_state=12345),
+    GradientBoostingClassifier(random_state=12345),
+    lgb.LGBMClassifier(random_state=12345),
+    xgb.XGBClassifier(random_state=12345),
+    CatBoostClassifier(verbose=0, random_state=12345)
 ]
 
-# vectorize features
+# define feature preprocessor
 preprocessor = ColumnTransformer(
     transformers=[
         ('num', StandardScaler(), numerical_features),

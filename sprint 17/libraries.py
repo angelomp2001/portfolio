@@ -17,7 +17,7 @@ from catboost import CatBoostClassifier
 # libraries for tensorflow
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+#from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 
