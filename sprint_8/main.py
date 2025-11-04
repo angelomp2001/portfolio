@@ -3,11 +3,23 @@ compensation strategies: 'balanced weights' logistic regression setting, upsampl
 
 
 
-from src import *
+from src.best_model_picker import best_model_picker
+import pandas as pd
+
+import sys
+from pathlib import Path
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+# Add the common_lib directory to the Python path
+sys.path.append("C:\\Users\\Angelo\\Documents\\github\\portfolio\\portfolio")
+
+from data_explorers import view, see
 
 # load data
 path = 'data/Churn.csv'
-df = pd.load_data(path)
+df = pd.read_csv(path)
 
 ## EDA
 view(df)
