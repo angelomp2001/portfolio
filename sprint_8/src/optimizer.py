@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 from src.model_scorer import categorical_scorer
-import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, average_precision_score
 
 

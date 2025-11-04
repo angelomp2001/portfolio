@@ -1,18 +1,11 @@
 # This optimizes target_threshold and ML hyperparameters.
 
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import OrdinalEncoder
-from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
 from src.data_transformers import data_transformer
-from src.model_scorer import categorical_scorer
-import matplotlib.pyplot as plt
 from src.optimizer import optimizer
-from sklearn.metrics import roc_auc_score, average_precision_score
 
 
 def best_model_picker(
