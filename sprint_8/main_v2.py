@@ -2,32 +2,54 @@
 compensation strategies: 'balanced weights' logistic regression setting, upsampling, downsampling'''
 
 # libraries
+from src_v_2.Input_Output.IO import Input
+from data_explorers import view, see
 
 # load data
 path = 'data/Churn.csv'
-df = pd.read_csv(path)
+df = Input.from_csv(path)
+
 
 ## EDA
 view(df)
 
-" 'I'll keep the header names, encode categorical, ['Exit'] has minority of 20%, which I think is fine. especially out of 10k rows.   "
+# 'I'll keep the header names, 
+# encode categorical, 
+# ['Exit'] has minority of 20%, which I think is fine. especially out of 10k rows. 
 
 # columns=['RowNumber', 'CustomerId', 'Surname', 'CreditScore', 'Geography', 'Gender', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 'Exited']
-df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis = 1)
-df = df.drop_duplicates()
+# dropping irrelevant rows and duplicates - if any. 
+#df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis = 1)
+Cleaner = Cleaner(df)
 
+Cleaner.drop(['RowNumber', 'CustomerId', 'Surname'])
+#df = df.drop_duplicates()
+Cleaner.drop_duplicates()
+df = Cleaner.df
+
+# visualizer
 see(df)
 
 ## data transformation:
 # encode categorical
-# NOTE: ['Exit'] has minority of 20% and will stay that way:
+# Note: ['Exit'] has minority of 20% and will stay that way:
 
 #define target & identify ordinal categorical vars
-target = df['Exited']
-features = df.drop(target.name, axis = 1)
+# target = df['Exited']
+Cleaner.set_rows(n_rows = n_rows, split_ratio = (0.6, 0.2, 0.2))
+Cleaner.set_missing(fill_method = 'drop', fill_value = None)
 
-random_state = 99999
-metric = None
+raw_df = Cleaner.df
+
+Model(data = raw_df, model_options = model_options, random_state = random_state)
+Model.set_target(column = 'Exited', n = [n_target_majority, n_target_minority], target_type = 'classification', target_threshold = 0.5)
+best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores = Model.scores(metric = metric)
+transformed_data = Model.df
+
+#features = df.drop(target.name, axis = 1)
+
+#random_state = 99999
+#metric = None
 model_options = {
             'Regressions': {
                 'LogisticRegression': LogisticRegression(random_state=random_state, solver='liblinear', max_iter=200)},
@@ -56,6 +78,8 @@ best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_s
     metric=metric,
     target_type='classification'
 )
+
+
 raw_validation_scores = model_scores
 
 # balanced logistic regression
