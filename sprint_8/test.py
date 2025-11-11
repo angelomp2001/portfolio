@@ -1,47 +1,46 @@
+# main.py
 ''' Pick the best model for predicting binary classifier with a significant minority ratio, under various compensation strategies. 
 compensation strategies: 'balanced weights' logistic regression setting, upsampling, downsampling'''
 
 # libraries
-from src_v_2.Input_Output.IO import Input
-from src.data_explorers import view, see
-from src_v_2.Input_Output.Cleaner import Cleaner
-from src_v_2.Modeling.Model import Model
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
-# load data
-path = 'data/Churn.csv'
-df = Input.from_csv(file_path=path)
+from main_v2 import *
 
 
-## EDA
-view(df)
+def define_models(random_state):
+    return {
+        "Regressions": {
+            "LogisticRegression": LogisticRegression(random_state=random_state, solver="liblinear", max_iter=200)
+        },
+        "Machine Learning": {
+            "DecisionTreeClassifier": DecisionTreeClassifier(random_state=random_state),
+            "RandomForestClassifier": RandomForestClassifier(random_state=random_state),
+        },
+    }
 
-# 'I'll keep the header names, 
-# encode categorical, 
-# ['Exit'] has minority of 20%, which I think is fine. especially out of 10k rows. 
 
-# columns=['RowNumber', 'CustomerId', 'Surname', 'CreditScore', 'Geography', 'Gender', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 'Exited']
-# dropping irrelevant rows and duplicates - if any. 
-#df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis = 1)
-Cleaner = Cleaner(df)
 
-Cleaner.drop(['RowNumber', 'CustomerId', 'Surname'])
-#df = df.drop_duplicates()
-Cleaner.drop_duplicates()
-df = Cleaner.df
+# Load data
+df = pd.read_csv("data/Churn.csv")
+#view(df)
 
-# visualizer
-#see(df)
+# Clean
+handler = DataHandler(df, target_col="Exited")
+handler.clean(drop_cols=["RowNumber", "CustomerId", "Surname"])
+#see(handler.df)
 
-## data transformation:
-# encode categorical
-# Note: ['Exit'] has minority of 20% and will stay that way:
+# Split
+data_split = handler.split(split_ratio=(0.6, 0.2, 0.2), random_state=99999)
 
-#define target & identify ordinal categorical vars
-# target = df['Exited']
-n_rows = 10
-print(n_rows)
-Cleaner.set_rows(n_rows = n_rows)
-Cleaner.set_missing(fill_method = 'drop', fill_value = None)
+X_train, X_val, X_test, y_train, y_val, y_test = data_split
 
-cleaned_df = Cleaner.df
+# print(X_train.head(), X_train.columns, X_train.dtypes)
+
+X_train, X_val = preprocess_data(X_train, X_val)
+
+# print(X_train.head(), X_train.columns, X_train.dtypes)
 
