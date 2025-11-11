@@ -2,181 +2,157 @@
 compensation strategies: 'balanced weights' logistic regression setting, upsampling, downsampling'''
 
 # libraries
-from src_v_2.Input_Output.IO import Input
-from data_explorers import view, see
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
-# load data
-path = 'data/Churn.csv'
-df = Input.from_csv(path)
+from src_v_2.data_handler import DataHandler
+from src_v_2.data_handler import preprocess_data
+from src_v_2.model_selector import ModelSelector
+from src_v_2.model_trainer import ModelTrainer
 
-
-## EDA
-view(df)
-
-# 'I'll keep the header names, 
-# encode categorical, 
-# ['Exit'] has minority of 20%, which I think is fine. especially out of 10k rows. 
-
-# columns=['RowNumber', 'CustomerId', 'Surname', 'CreditScore', 'Geography', 'Gender', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 'Exited']
-# dropping irrelevant rows and duplicates - if any. 
-#df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis = 1)
-Cleaner = Cleaner(df)
-
-Cleaner.drop(['RowNumber', 'CustomerId', 'Surname'])
-#df = df.drop_duplicates()
-Cleaner.drop_duplicates()
-df = Cleaner.df
-
-# visualizer
-see(df)
-
-## data transformation:
-# encode categorical
-# Note: ['Exit'] has minority of 20% and will stay that way:
-
-#define target & identify ordinal categorical vars
-# target = df['Exited']
-Cleaner.set_rows(n_rows = n_rows, split_ratio = (0.6, 0.2, 0.2))
-Cleaner.set_missing(fill_method = 'drop', fill_value = None)
-
-raw_df = Cleaner.df
-
-Model(data = raw_df, model_options = model_options, random_state = random_state)
-Model.set_target(column = 'Exited', n = [n_target_majority, n_target_minority], target_type = 'classification', target_threshold = 0.5)
-best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores = Model.scores(metric = metric)
-transformed_data = Model.df
-
-#features = df.drop(target.name, axis = 1)
-
-#random_state = 99999
-#metric = None
-model_options = {
-            'Regressions': {
-                'LogisticRegression': LogisticRegression(random_state=random_state, solver='liblinear', max_iter=200)},
-            'Machine Learning': {
-                'DecisionTreeClassifier': DecisionTreeClassifier(random_state=random_state),
-                'RandomForestClassifier': RandomForestClassifier(random_state=random_state),
-                
-            }
-        }
-
-#raw
-print(f'raw...')
-best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-    features = features,
-    target = target,
-    n_target_majority = None,
-    n_target_minority = None,
-    n_rows = None,
-    ordinal_cols = None,
-    random_state = random_state,
-    model_options = model_options,
-    split_ratio = (0.6, 0.2, 0.2),
-    missing_values_method= 'drop',
-    fill_value = None,
-    target_threshold = 0.5,
-    metric=metric,
-    target_type='classification'
-)
+from src.data_explorers import view, see
 
 
-raw_validation_scores = model_scores
-
-# balanced logistic regression
-model_options = {
-    'Regressions': {
-        'LogisticRegression': LogisticRegression(random_state=12345, solver='liblinear', class_weight='balanced')
+def define_models(random_state):
+    return {
+        "Regressions": {
+            "LogisticRegression": LogisticRegression(random_state=random_state, solver="liblinear", max_iter=200)
+        },
+        "Machine Learning": {
+            "DecisionTreeClassifier": DecisionTreeClassifier(random_state=random_state),
+            "RandomForestClassifier": RandomForestClassifier(random_state=random_state),
+        },
     }
-}
 
-print(f'class weight adjustment...')
-best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-    features = features,
-    target = target,
-    n_rows = None,
-    n_target_majority = None,
-    ordinal_cols = None,
-    random_state = random_state,
-    model_options = model_options,
-    split_ratio = (0.6, 0.2, 0.2),
-    missing_values_method= 'drop',
-    fill_value = None,
-    target_threshold = 0.5,
-    metric=metric,
-    target_type='classification'
-)
 
-lr_balanced_validation_scores = model_scores
+def main():
+    # Load data
+    df = pd.read_csv("data/Churn.csv")
+    #view(df)
 
-# upsampling
-print(f'upsampling...')
-best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-    features = features,
-    target = target,
-    n_rows = None,
-    n_target_majority = 5000,
-    ordinal_cols = None,
-    random_state = random_state,
-    model_options = None,
-    split_ratio = (0.6, 0.2, 0.2),
-    missing_values_method= 'drop',
-    fill_value = None,
-    target_threshold = 0.5,
-    metric=metric,
-    target_type='classification'
-)
-upsampling_scores = model_scores
+    # Clean
+    handler = DataHandler(df, target_col="Exited")
+    handler.clean(drop_cols=["RowNumber", "CustomerId", "Surname"])
+    #see(handler.df)
 
-# downsampling
+    # Split
+    data_split = handler.split(split_ratio=(0.6, 0.2, 0.2), random_state=99999)
 
-print(f'downsampling...')
-best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-    features = features,
-    target = target,
-    n_rows = 4000,
-    n_target_majority = .2*10000,
-    ordinal_cols = None,
-    random_state = random_state,
-    model_options = None,
-    split_ratio = (0.6, 0.2, 0.2),
-    missing_values_method= 'drop',
-    fill_value = None,
-    target_threshold = 0.5,
-    target_type='classification',
-    metric=metric
-)
-downsampling_scores = model_scores
+    X_train, X_val, X_test, y_train, y_val, y_test = data_split  # however you get them now
+    X_train, X_val = preprocess_data(X_train, X_val)
 
-# applying all models but with optimal hyperparameters to test set:
-print(f'testing all models on test data...')
-best_scores_summary_df, optimized_hyperparameters, best_scores_by_model_df, model_scores, _ , model_options = best_model_picker(
-    features = transformed_data[2],
-    target = transformed_data[3],
-    test_features= transformed_data[4],
-    test_target= transformed_data[5],
-    random_state = random_state,
-    model_options= model_options,
-    model_params = optimized_hyperparameters,
-    target_threshold = 0.5,
-    missing_values_method= 'drop',
-    metric=metric,
-    target_type='classification',
-)
+    # Models
+    models = define_models(random_state=99999)
+    selector = ModelSelector(models)
 
-# applying all models but with optimal hyperparameters to test set AND optimized target threshold:
-print(f'testing all models on test data...')
-best_scores_summary_df, optimized_hyperparameters, best_scores_by_model_df, model_scores, transformed_data, model_options = best_model_picker(
-    features = transformed_data[2],
-    target = transformed_data[3],
-    test_features= transformed_data[4],
-    test_target= transformed_data[5],
-    random_state = random_state,
-    model_options= model_options,
-    model_params = optimized_hyperparameters,
-    target_threshold = None,
-    missing_values_method= 'drop',
-    metric=metric,
-    target_type='classification',
-)
+    # Train & Evaluate
+    results = selector.run_all((X_train, X_val, y_train, y_val))
+    summary = selector.summarize()
+    print(summary.head())
 
-'Conclusion: RandomForest is generally a superior model.  Downsampling was the best way to maximize Accuracy.'
+
+if __name__ == "__main__":
+    main()
+
+#_________________________
+
+# # balanced logistic regression
+# model_options = {
+#     'Regressions': {
+#         'LogisticRegression': LogisticRegression(random_state=12345, solver='liblinear', class_weight='balanced')
+#     }
+# }
+
+# print(f'class weight adjustment...')
+# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
+#     features = features,
+#     target = target,
+#     n_rows = None,
+#     n_target_majority = None,
+#     ordinal_cols = None,
+#     random_state = random_state,
+#     model_options = model_options,
+#     split_ratio = (0.6, 0.2, 0.2),
+#     missing_values_method= 'drop',
+#     fill_value = None,
+#     target_threshold = 0.5,
+#     metric=metric,
+#     target_type='classification'
+# )
+
+# lr_balanced_validation_scores = model_scores
+
+# # upsampling
+# print(f'upsampling...')
+# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
+#     features = features,
+#     target = target,
+#     n_rows = None,
+#     n_target_majority = 5000,
+#     ordinal_cols = None,
+#     random_state = random_state,
+#     model_options = None,
+#     split_ratio = (0.6, 0.2, 0.2),
+#     missing_values_method= 'drop',
+#     fill_value = None,
+#     target_threshold = 0.5,
+#     metric=metric,
+#     target_type='classification'
+# )
+# upsampling_scores = model_scores
+
+# # downsampling
+
+# print(f'downsampling...')
+# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
+#     features = features,
+#     target = target,
+#     n_rows = 4000,
+#     n_target_majority = .2*10000,
+#     ordinal_cols = None,
+#     random_state = random_state,
+#     model_options = None,
+#     split_ratio = (0.6, 0.2, 0.2),
+#     missing_values_method= 'drop',
+#     fill_value = None,
+#     target_threshold = 0.5,
+#     target_type='classification',
+#     metric=metric
+# )
+# downsampling_scores = model_scores
+
+# # applying all models but with optimal hyperparameters to test set:
+# print(f'testing all models on test data...')
+# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model_df, model_scores, _ , model_options = best_model_picker(
+#     features = transformed_data[2],
+#     target = transformed_data[3],
+#     test_features= transformed_data[4],
+#     test_target= transformed_data[5],
+#     random_state = random_state,
+#     model_options= model_options,
+#     model_params = optimized_hyperparameters,
+#     target_threshold = 0.5,
+#     missing_values_method= 'drop',
+#     metric=metric,
+#     target_type='classification',
+# )
+
+# # applying all models but with optimal hyperparameters to test set AND optimized target threshold:
+# print(f'testing all models on test data...')
+# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model_df, model_scores, transformed_data, model_options = best_model_picker(
+#     features = transformed_data[2],
+#     target = transformed_data[3],
+#     test_features= transformed_data[4],
+#     test_target= transformed_data[5],
+#     random_state = random_state,
+#     model_options= model_options,
+#     model_params = optimized_hyperparameters,
+#     target_threshold = None,
+#     missing_values_method= 'drop',
+#     metric=metric,
+#     target_type='classification',
+# )
+
+# 'Conclusion: RandomForest is generally a superior model.  Downsampling was the best way to maximize Accuracy.'

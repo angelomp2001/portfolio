@@ -1,31 +1,47 @@
-import pandas as pd
-import sklearn.tree as tree
-from sklearn.tree import DecisionTreeClassifier
-import matplotlib.pyplot as plt
-from sklearn.tree import plot_tree
+''' Pick the best model for predicting binary classifier with a significant minority ratio, under various compensation strategies. 
+compensation strategies: 'balanced weights' logistic regression setting, upsampling, downsampling'''
+
+# libraries
+from src_v_2.Input_Output.IO import Input
+from src.data_explorers import view, see
+from src_v_2.Input_Output.Cleaner import Cleaner
+from src_v_2.Modeling.Model import Model
+
+# load data
+path = 'data/Churn.csv'
+df = Input.from_csv(file_path=path)
 
 
-# Create the toy dataset
-data = {
-    'Total Area (m²)': [30, 50, 45],
-    'Bedrooms': [1, 2, 2],
-    'Bought House': [0, 1, 1]
-}
+## EDA
+view(df)
 
-df = pd.DataFrame(data)
+# 'I'll keep the header names, 
+# encode categorical, 
+# ['Exit'] has minority of 20%, which I think is fine. especially out of 10k rows. 
 
-# Define features and target
-features = df[['Total Area (m²)', 'Bedrooms']]  # Use all features for training
-target = df['Bought House']  # Use target variable
+# columns=['RowNumber', 'CustomerId', 'Surname', 'CreditScore', 'Geography', 'Gender', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 'Exited']
+# dropping irrelevant rows and duplicates - if any. 
+#df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis = 1)
+Cleaner = Cleaner(df)
 
-# Initialize the Decision Tree Classifier
-model = DecisionTreeClassifier(random_state=0)  # Optional: specify random state for reproducibility
+Cleaner.drop(['RowNumber', 'CustomerId', 'Surname'])
+#df = df.drop_duplicates()
+Cleaner.drop_duplicates()
+df = Cleaner.df
 
-# Fit the model
-model.fit(features, target)
+# visualizer
+#see(df)
 
-# Plot the decision tree
-#plt.figure(figsize=(10, 6))  # Optional: set the size of the plot
-plot_tree(model, feature_names=features.columns, class_names=['Not Bought', 'Bought'], filled=True)
-#plt.title('Decision Tree Visualization')
-plt.show()
+## data transformation:
+# encode categorical
+# Note: ['Exit'] has minority of 20% and will stay that way:
+
+#define target & identify ordinal categorical vars
+# target = df['Exited']
+n_rows = 10
+print(n_rows)
+Cleaner.set_rows(n_rows = n_rows)
+Cleaner.set_missing(fill_method = 'drop', fill_value = None)
+
+cleaned_df = Cleaner.df
+

@@ -4,6 +4,7 @@
 class Cleaner:
     def __init__(self, raw_data, random_state = 12345):
         self.raw_data = raw_data
+        self.df = self.raw_data.copy()
         self.cleaned_data = None
         self.random_state = random_state
         self.n_rows = None
@@ -11,15 +12,33 @@ class Cleaner:
         self.n_target_minority = None
 
     def drop(self, col):
-        self.raw_data.drop(col, inplace = True, axis = 1)
+        self.df.drop(col, inplace = True, axis = 1)
+
+        return self.df
 
     def drop_duplicates(self):
-        self.raw_data.drop_duplicates(inplace = True)
+        self.df.drop_duplicates(inplace = True)
 
-    def set_rows(self, n_rows = None, target = None, n_target_minority = None):
+        return self.df
+
+    def set_rows(self, target, n_rows = [None]):
         self.n_rows = n_rows
-        self.target = target if target is not None else self.target
-        self.n_target_minority = n_target_minority
+        self.target = target
+        if n_rows is not None:
+            self.df = self.df.sample(n = n_rows, random_state = self.random_state)
+            self.df.reset_index(drop = True, inplace = True)
+
+        return self.df
+
+    def set_missing(self, fill_method = 'drop', fill_value = None):
+        if fill_method == 'drop':
+            self.df.dropna(inplace = True)
+        elif fill_method == 'fill':
+            self.df.fillna(fill_value, inplace = True)
+
+        return self.df
+
+    
 
 
 
