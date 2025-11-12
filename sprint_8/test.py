@@ -38,9 +38,7 @@ data_split = handler.split(split_ratio=(0.6, 0.2, 0.2), random_state=99999)
 
 X_train, X_val, X_test, y_train, y_val, y_test = data_split
 
-# print(X_train.head(), X_train.columns, X_train.dtypes)
-
 X_train, X_val = preprocess_data(X_train, X_val)
 
-# print(X_train.head(), X_train.columns, X_train.dtypes)
+
 

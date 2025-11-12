@@ -98,7 +98,7 @@ class ModelTrainer:
 
 # model_selector.py
 import pandas as pd
-from src_v_2.model_trainer import ModelTrainer
+#from src_v_2.model_trainer import ModelTrainer
 
 class ModelSelector:
     def __init__(self, model_options: dict):
@@ -133,10 +133,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-from src_v_2.data_handler import DataHandler
-from src_v_2.data_handler import preprocess_data
-from src_v_2.model_selector import ModelSelector
-from src_v_2.model_trainer import ModelTrainer
+#from src_v_2.data_handler import DataHandler
+#from src_v_2.data_handler import preprocess_data
+#from src_v_2.model_selector import ModelSelector
+#from src_v_2.model_trainer import ModelTrainer
 
 from src.data_explorers import view, see
 
