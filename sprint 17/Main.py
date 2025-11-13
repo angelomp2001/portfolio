@@ -40,14 +40,16 @@ if __name__ == "__main__":
     # Train classical models
     trainer = ModelTrainer(features=features, k_folds=5, random_state=12345)
 
-    # evaluate
-    results = trainer.evaluate(target)
-
     # Train neural net
     nn_trainer = NeuralNetTrainer(features, k_folds=5, drop_rate=0.1)
+    
+    # evaluate classic models
+    results = trainer.evaluate(target)
+
+    # evaluate nn
     nn_results = nn_trainer.evaluate(target, trainer.preprocessor)
 
-    # Output
+    # Output both results
     Output.to_console(results)
     Output.to_console(nn_results)
 
