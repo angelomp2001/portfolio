@@ -19,6 +19,25 @@ class DataHandler:
         self.target = self.df[self.target_col]
         return self
 
+    def missing_values(self,
+        missing_values_method: str,
+        fill_value=0) -> pd.DataFrame:
+        """
+        missing values handler
+        method (str): 'drop', 'fill'
+        fill_value: the value to use with the 'fill' method. Can be any type (text, number, etc.). Defaults to 0.
+                        
+        Returns:
+            pd.DataFrame: The DataFrame after handling missing values.
+        """
+        if missing_values_method == 'drop':
+            self.df = self.df.dropna()
+        elif missing_values_method == 'fill':
+            self.df = self.df.fillna(fill_value)
+        else:
+            raise ValueError(f"Unknown method: {missing_values_method}")
+        return self.df
+
     def split(self, split_ratio=(0.6, 0.2, 0.2), random_state=42):
         """Split into train, validation, and test sets."""
         train_size, val_size, _ = split_ratio
@@ -47,7 +66,6 @@ def preprocess_data(X_train, X_test):
     # Encode categorical data
     X_train_cat = pd.get_dummies(X_train[categorical_cols], prefix=categorical_cols)
     X_test_cat = pd.get_dummies(X_test[categorical_cols], prefix=categorical_cols)
-    print(f'X_train_cat: {X_train_cat.columns}')
 
     # Fill new categories in test with 0 ie drop them. 
     X_test_cat = X_test_cat.reindex(columns=X_train_cat.columns, fill_value=0)
@@ -67,7 +85,7 @@ def preprocess_data(X_train, X_test):
     return X_train_final, X_test_final
 
 # model_trainer.py
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, precision_recall_curve, auc
 
 class ModelTrainer:
     def __init__(self, model, name: str):
@@ -81,20 +99,136 @@ class ModelTrainer:
 
     def evaluate(self, X_val, y_val):
         """Evaluate with multiple metrics."""
+        probs = self.model.predict_proba(X_val)
         preds = self.model.predict(X_val)
-        probs = getattr(self.model, "predict_proba", lambda X: None)(X_val)
+        #probs = getattr(self.model, "predict_proba", lambda X: None)(X_val)
         roc_auc = roc_auc_score(y_val, probs[:, 1]) if probs is not None else None
 
         precision, recall, _ = precision_recall_curve(y_val, probs[:, 1]) if probs is not None else (None, None, None)
         pr_auc = auc(recall, precision) if recall is not None else None
 
         self.results = {
-            "Model": self.name,
+            "Model Name": self.name,
+            #"Threshold": threshold,  
             "Accuracy": accuracy_score(y_val, preds),
+            "Precision":precision_score(y_val, preds),
+            "Recall": recall_score(y_val, preds),
+            "F1": f1_score(y_val, preds),
             "ROC AUC": roc_auc,
             "PR AUC": pr_auc
         }
+        
         return self.results
+    
+    def optimizer(self, param_to_optimize: None, metric_to_use: None):
+        self.param_to_optimize = param_to_optimize
+        self.metric_to_use = metric_to_use
+
+        #Apply any OTHER model params
+        provided_model_params = self.model.get(model_name).get_params().copy()
+        current_model_params = self.model.get_params().copy()
+        current_model_params.update(provided_model_params)
+        
+
+        "if metric is not provided"
+        if metric is None:
+            metric = metrics
+        elif not isinstance(metric, list):
+            metric = [metric]
+
+        "optimize a hyperparameter"
+        # Algo for hyperparameter optimization
+        threshold = 0.5 #keep constant while optimizing hyperparameters
+
+        for col in metric:
+
+            while high - low > tolerance:
+                
+                # get parameter value
+                mid = (low + high) / 2
+                
+                # save the parameter value
+                params = {param_to_optimize: int(round(mid))}
+                
+                # update model params
+                current_model_params.update(params)
+
+                #update model with params
+                model.set_params(**current_model_params)
+                
+                #Re/Fit model
+                model.fit(train_features, train_target)
+                
+                # Predict target
+                y_pred = model.predict_proba(score_features)
+                
+                # score prediction
+                accuracy, precision, recall, f1 = categorical_scorer(
+                    target=score_target,
+                    y_pred=y_pred[:, 1],
+                    threshold=threshold 
+                )
+
+                #AUC values
+                roc_auc = roc_auc_score(score_target, y_pred[:, 1])
+                pr_auc = average_precision_score(score_target, y_pred[:, 1])
+
+                # log this iteration
+                row_data = {
+                    "Model Name": model_name,
+                    "Parameter Name": param_to_optimize,
+                    "Threshold": threshold, # keep constant b/c we are optimizing hyperparameters"
+                    "Parameter": mid, 
+                    "Accuracy": accuracy,
+                    "Precision": precision,
+                    "Recall": recall,
+                    "F1": f1,
+                    "ROC AUC": roc_auc,
+                    "PR AUC": pr_auc
+                }
+
+                row_values = pd.DataFrame([row_data])
+                hyperparameter_table = pd.concat([hyperparameter_table, row_values], ignore_index=True)
+                
+                # Choose metric for optimization
+                score = row_values[col].iloc[0]
+                
+                # update best score
+                if score > best_score:
+                    best_score = score
+
+                    # update model param with param of best score
+                    params = {param_to_optimize: int(round(mid))}
+                    
+
+                    #set new low for next iteration
+                    low = mid + tolerance
+                    
+                else:
+                    # set new high for next iteration
+                    high = mid - tolerance            
+
+        "Return optimized param"
+        # get optimized parameter
+        optimized_param = current_model_params.get(param_to_optimize)
+
+        if metric is None or len(metric) > 1:
+            pass
+            # return multiple metrics
+            #return optimized_param, current_model_params, metrics
+        
+        else:
+            # get best scores of desired metric
+            best_scores = hyperparameter_table.loc[hyperparameter_table[col] == best_score]
+
+            # save best scores of desired metric to output
+            hyperparameter_table = pd.concat([hyperparameter_table, best_scores], ignore_index=True)
+
+            # return best model params, their scores, and the whole scores df
+            #return optimized_param, best_score, metrics
+
+
+
 
 # model_selector.py
 import pandas as pd
@@ -109,7 +243,6 @@ class ModelSelector:
         X_train, X_val, y_train, y_val = data_split
 
         for category, models in self.model_options.items():
-            print(f"Testing {category} models...")
             for model_name, model in models.items():
                 trainer = ModelTrainer(model, model_name)
                 trainer.fit(X_train, y_train)
@@ -140,43 +273,54 @@ from sklearn.ensemble import RandomForestClassifier
 
 from src.data_explorers import view, see
 
-
-def define_models(random_state):
-    return {
-        "Regressions": {
-            "LogisticRegression": LogisticRegression(random_state=random_state, solver="liblinear", max_iter=200)
-        },
-        "Machine Learning": {
-            "DecisionTreeClassifier": DecisionTreeClassifier(random_state=random_state),
-            "RandomForestClassifier": RandomForestClassifier(random_state=random_state),
-        },
-    }
-
-
 def main():
     # Load data
     df = pd.read_csv("data/Churn.csv")
+    random_state = 12345
+    model_options = {
+                'Regressions': {
+                    'LogisticRegression': LogisticRegression(random_state=random_state, solver='liblinear', max_iter=200)},
+                'Machine Learning': {
+                    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=random_state),
+                    'RandomForestClassifier': RandomForestClassifier(random_state=random_state),
+                    
+                }
+            }
     #view(df)
 
-    # Clean
-    handler = DataHandler(df, target_col="Exited")
-    handler.clean(drop_cols=["RowNumber", "CustomerId", "Surname"])
-    #see(handler.df)
+    def test_case(model_options = model_options): 
+        #raw logistical regression
+        # Clean
+        handler = DataHandler(df, target_col="Exited")
+        handler.clean(drop_cols=["RowNumber", "CustomerId", "Surname"])
+        #see(handler.df)
 
-    # Split
-    data_split = handler.split(split_ratio=(0.6, 0.2, 0.2), random_state=99999)
+        handler.missing_values(missing_values_method = 'drop')
 
-    X_train, X_val, X_test, y_train, y_val, y_test = data_split
-    X_train, X_val = preprocess_data(X_train, X_val)
+        # Split
+        data_split = handler.split(split_ratio=(0.6, 0.2, 0.2), random_state=random_state)
 
-    # Models
-    models = define_models(random_state=99999)
-    selector = ModelSelector(models)
+        X_train, X_val, X_test, y_train, y_val, y_test = data_split
+        X_train, X_val = preprocess_data(X_train, X_val)
 
-    # Train & Evaluate
-    results = selector.run_all((X_train, X_val, y_train, y_val))
-    summary = selector.summarize()
-    print(summary.head())
+        # Models
+        selector = ModelSelector(model_options)
+
+        # Train & Evaluate
+        results = selector.run_all((X_train, X_val, y_train, y_val))
+        summary = selector.summarize()
+        print(summary.head())
+
+    # raw models
+    test_case(model_options=model_options)
+    
+    model_options = {
+                'Regressions': {
+                    'LogisticRegression': LogisticRegression(class_weight= 'balanced', random_state=random_state, solver='liblinear', max_iter=200)}
+                }
+    
+    # logisticRegression(class_weight = 'balanced')
+    #test_case(model_options=model_options)
 
 
 if __name__ == "__main__":

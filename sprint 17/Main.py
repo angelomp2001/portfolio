@@ -40,28 +40,20 @@ if __name__ == "__main__":
     # Train classical models
     trainer = ModelTrainer(features=features, k_folds=5, random_state=12345)
 
-    # evaluate
-    results = trainer.evaluate(target)
-
     # Train neural net
     nn_trainer = NeuralNetTrainer(features, k_folds=5, drop_rate=0.1)
+    
+    # evaluate classic models
+    results = trainer.evaluate(target)
+
+    # evaluate nn
     nn_results = nn_trainer.evaluate(target, trainer.preprocessor)
 
-    # Output
+    # Output both results
     Output.to_console(results)
     Output.to_console(nn_results)
 
 '''
-LogisticRegression             Train AUC: 0.841 | Test AUC: 0.838
-RandomForestClassifier         Train AUC: 1.000 | Test AUC: 0.809
-KNeighborsClassifier           Train AUC: 0.897 | Test AUC: 0.772
-DecisionTreeClassifier         Train AUC: 1.000 | Test AUC: 0.662
-GradientBoostingClassifier     Train AUC: 0.881 | Test AUC: 0.845
-LGBMClassifier                 Train AUC: 0.950 | Test AUC: 0.834
-XGBClassifier                  Train AUC: 0.983 | Test AUC: 0.820
-CatBoostClassifier             Train AUC: 0.939 | Test AUC: 0.838
-NeuralNetwork (keras)          Train AUC: 0.986 | Test AUC: 0.757
-
 LogisticRegression             Train AUC: 0.841 | Test AUC: 0.838
 RandomForestClassifier         Train AUC: 1.000 | Test AUC: 0.809
 KNeighborsClassifier           Train AUC: 0.897 | Test AUC: 0.772

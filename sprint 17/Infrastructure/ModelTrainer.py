@@ -17,7 +17,7 @@ class ModelTrainer:
 
         self.kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.random_state)
         self.models = [
-            LogisticRegression(random_state=self.random_state),
+            LogisticRegression(random_state=self.random_state, solver='liblinear'),
             RandomForestClassifier(random_state=self.random_state),
             KNeighborsClassifier(),
             DecisionTreeClassifier(random_state=self.random_state),
