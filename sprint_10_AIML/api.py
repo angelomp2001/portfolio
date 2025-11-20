@@ -1,3 +1,4 @@
+''' business logic for the API endpoints '''
 import joblib
 import numpy as np
 import json
@@ -20,16 +21,12 @@ def load_model_and_metadata():
     global model, metadata
 
     try:
-        # YOUR TASK: Load the model
-        # Use joblib.load() to load 'model.pkl'
-        # Store it in the global 'model' variable
-        model = None  # Replace this with joblib.load(...)
-
+        model = joblib.load('model.pkl')
         # YOUR TASK: Load the metadata
         # Open 'model_metadata.json' and load it with json.load()
         # Store it in the global 'metadata' variable
         with open('model_metadata.json', 'r') as f:
-            metadata = None  # Replace this with json.load(...)
+            metadata = json.load(f)
 
         print("Model and metadata loaded successfully!")
         return True
@@ -62,15 +59,15 @@ def make_prediction(house_features: Dict[str, Any]) -> float:
     # YOUR TASK: Extract features in the correct order
     # The order MUST match the order in metadata['features']
     # Hint: Use a list comprehension to get features in order
-    feature_values = []  # Replace with list comprehension
+    feature_values = [house_features[feature] for feature in metadata['features']]
 
     # YOUR TASK: Convert to numpy array with correct shape
     # The model expects shape (1, 13) - one row, 13 columns
-    X = None  # Replace with np.array() conversion
+    X = np.array(feature_values).reshape(1, -1)
 
     # YOUR TASK: Make prediction and extract single value
     # model.predict() returns an array, we need the single value
-    prediction = 0.0  # Replace with actual prediction
+    prediction = model.predict(X)[0]
 
     # Round to 2 decimal places for currency
     return round(float(prediction), 2)
@@ -89,7 +86,10 @@ def get_model_info() -> Dict[str, Any]:
 
     # YOUR TASK: Check if metadata is loaded and return it
     # If metadata is None, raise ValueError("Model metadata not loaded")
-    pass  # Replace with your implementation
+    if metadata is None:
+        raise ValueError("Model metadata not loaded")
+    return metadata
+
 
 def check_health() -> Dict[str, Any]:
     """
@@ -112,9 +112,9 @@ def check_health() -> Dict[str, Any]:
     # - "message": Descriptive message about the status
 
     health_status = {
-        "status": "unhealthy",  # Update based on checks
-        "model_loaded": False,  # Update based on model check
-        "message": "Service status unknown"  # Update with appropriate message
+        "status": "healthy" if model is not None and metadata is not None else "unhealthy",
+        "model_loaded": model is not None,
+        "message": "The status of the model"  # Update with appropriate message
     }
 
     return health_status

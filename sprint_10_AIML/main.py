@@ -27,7 +27,7 @@ async def startup_event():
     """Load model and metadata when the service starts"""
     # Call load_model_and_metadata() from api.py
     # If it returns False, print an error message
-    success = False  # Replace with actual function call
+    success = load_model_and_metadata()
     if not success:
         print("WARNING: Failed to load model at startup")
 
@@ -45,7 +45,12 @@ async def health_check():
     """
     # Get health status from api.py
     # Create and return HealthCheckResponse
-    pass  # Replace with your implementation
+    health_status = check_health()
+    return HealthCheckResponse(
+        status=health_status["status"],
+        model_loaded=health_status["model_loaded"],
+        message=health_status["message"]
+    )
 
 # YOUR TASK: Implement the model info endpoint
 # This endpoint should:
@@ -65,11 +70,19 @@ async def model_info():
     """
     try:
         # Get model info and return it
-        pass  # Replace with your implementation
+        info = get_model_info()
+        return ModelInfoResponse(
+            model_type=info["model_type"],
+            version=info["version"],
+            features=info["features"],
+            training_date=info["training_date"],
+            rmse=info["rmse"],
+            description=info["description"]
+        )
     except ValueError as e:
         # Raise HTTPException with status_code=503 (Service Unavailable)
         # Include the error message in the detail
-        pass  # Replace with proper error handling
+        raise HTTPException(status_code=503, detail=str(e))
 
 # YOUR TASK: Implement the prediction endpoint
 # This endpoint should:
@@ -94,14 +107,14 @@ async def predict(request: HousePredictionRequest):
     try:
         # YOUR TASK: Convert request to dictionary
         # Hint: Pydantic models have a .dict() method
-        features_dict = {}  # Replace with request.dict()
+        features_dict = request.dict()
 
         # YOUR TASK: Make prediction
-        predicted_price = 0.0  # Replace with make_prediction() call
+        predicted_price = make_prediction(features_dict)
 
         # YOUR TASK: Get model version from metadata
         # You'll need to call get_model_info() to get the version
-        model_version = "1.0.0"  # Replace with actual version from metadata
+        model_version = get_model_info()["version"]
 
         # YOUR TASK: Create and return PredictionResponse
         return PredictionResponse(

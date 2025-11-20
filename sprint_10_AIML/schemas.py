@@ -3,7 +3,7 @@ from typing import Optional
 
 class HousePredictionRequest(BaseModel):
     """Schema for house prediction request - validates all 13 features"""
-
+    
     # Property listing features
     total_images: int = Field(..., ge=0, le=50, description="Number of property images (0-50)")
 
@@ -53,9 +53,10 @@ class HousePredictionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     """Schema for prediction response"""
-    # Add the three fields here
-    # Remember to use Field() to add descriptions!
-    pass  # Remove this line when you add the fields
+    predicted_price: float = Field(description="The predicted house price")
+    currency: str = Field(default="USD", description="Currency of the predicted price")
+    model_version: str = Field(description="Version of the model used for prediction")
+    
 
 # YOUR TASK: Add the ModelInfoResponse schema
 # This schema defines what the /model/info endpoint returns
@@ -69,9 +70,13 @@ class PredictionResponse(BaseModel):
 
 class ModelInfoResponse(BaseModel):
     """Schema for model information response"""
-    # Add all six fields here
-    # Remember to use Field() to add descriptions!
-    pass  # Remove this line when you add the fields
+    # Fill in the ModelInfoResponse class with six fields (model_type, version, features, training_date, rmse, description)
+    model_type: str = Field(description="Type of the model (e.g., RandomForest, XGBoost)")
+    version: str = Field(description="Version of the model")
+    features: list[str] = Field(description="List of features used in the model")
+    training_date: str = Field(description="Date when the model was trained")
+    rmse: float = Field(description="Root Mean Squared Error of the model on validation data")
+    description: str = Field(description="Description of the model and its purpose")
 
 # YOUR TASK: Add the HealthCheckResponse schema
 # This schema defines what the /health endpoint returns
@@ -82,5 +87,7 @@ class ModelInfoResponse(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Schema for health check response"""
-    # Add the three fields here
-    pass  # Remove this line when you add the fields
+    # Fill in the HealthCheckResponse class with three fields (status, model_loaded, message)
+    status: str = Field(description="Health status of the service (healthy/unhealthy)")
+    model_loaded: bool = Field(description="Indicates if the model is loaded")
+    message: str = Field(description="Descriptive message about the health status")
