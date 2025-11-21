@@ -119,113 +119,117 @@ class ModelTrainer:
         }
         
         return self.results
+
+
+# optimization.py
+import pandas as pd
+import numpy as np
+from copy import deepcopy
+
+#from src_v_2.model_trainer import ModelTrainer  # adjust import path as needed
+
+class HyperparameterOptimizer:
+    def __init__(self, model, param_grid: dict, metric: str = "ROC AUC", model_name: str = None):
+        """
+        param_grid example:
+        {
+            "max_depth": [5, 10, 20],
+            "n_estimators": [50, 100]
+        }
+        """
+        self.base_model = model
+        self.param_grid = param_grid
+        self.metric = metric
+        self.model_name = model_name or type(model).__name__
+        self.results = pd.DataFrame()
+        self.best_params = None
+        self.best_score = -np.inf
+        self.best_model = None
+
+    def _iter_param_combinations(self):
+        """
+        Simple generator to iterate over all combinations in param_grid.
+        (Equivalent to sklearn's ParameterGrid but minimal.)
+        """
+        from itertools import product
+
+        keys = list(self.param_grid.keys())
+        values = [self.param_grid[k] for k in keys]
+
+        for combo in product(*values):
+            params = dict(zip(keys, combo))
+            yield params
+
+    def optimize(self, X_train, y_train, X_val, y_val):
+        """
+        Train and evaluate model for each param combination.
+        """
+        for params in self._iter_param_combinations():
+            # Create a fresh copy of the model for each run
+            model = deepcopy(self.base_model)
+            model.set_params(**params)
+
+            trainer = ModelTrainer(model, self.model_name)
+            trainer.fit(X_train, y_train)
+            metrics = trainer.evaluate(X_val, y_val)
+            metrics_with_params = {**metrics, **params}
+
+            self.results = pd.concat([self.results,
+                                      pd.DataFrame([metrics_with_params])],
+                                     ignore_index=True)
+
+            # Get score of the optimization metric
+            score = metrics.get(self.metric)
+            if score is not None and score > self.best_score:
+                self.best_score = score
+                self.best_params = params
+                self.best_model = model  # model is already fitted
+
+        return self.best_params, self.best_score, self.results
     
-    def optimizer(self, param_to_optimize: None, metric_to_use: None):
-        self.param_to_optimize = param_to_optimize
-        self.metric_to_use = metric_to_use
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, precision_recall_curve, auc
 
-        #Apply any OTHER model params
-        provided_model_params = self.model.get(model_name).get_params().copy()
-        current_model_params = self.model.get_params().copy()
-        current_model_params.update(provided_model_params)
-        
+def optimize_threshold(model, X_val, y_val, metric: str = "F1"):
+    """
+    Optimize probability threshold for a binary classifier.
+    Assumes model has predict_proba.
+    """
+    probs = model.predict_proba(X_val)[:, 1]
+    thresholds = np.arange(0.01, 0.99, 0.02)
 
-        "if metric is not provided"
-        if metric is None:
-            metric = metrics
-        elif not isinstance(metric, list):
-            metric = [metric]
+    results = []
+    best_score = -np.inf
+    best_threshold = 0.5
 
-        "optimize a hyperparameter"
-        # Algo for hyperparameter optimization
-        threshold = 0.5 #keep constant while optimizing hyperparameters
+    for t in thresholds:
+        preds = (probs >= t).astype(int)
 
-        for col in metric:
+        acc = accuracy_score(y_val, preds)
+        prec = precision_score(y_val, preds, zero_division=0)
+        rec = recall_score(y_val, preds, zero_division=0)
+        f1 = f1_score(y_val, preds, zero_division=0)
+        roc_auc = roc_auc_score(y_val, probs)
+        precision_curve, recall_curve, _ = precision_recall_curve(y_val, probs)
+        pr_auc = auc(recall_curve, precision_curve)
 
-            while high - low > tolerance:
-                
-                # get parameter value
-                mid = (low + high) / 2
-                
-                # save the parameter value
-                params = {param_to_optimize: int(round(mid))}
-                
-                # update model params
-                current_model_params.update(params)
+        row = {
+            "Threshold": t,
+            "Accuracy": acc,
+            "Precision": prec,
+            "Recall": rec,
+            "F1": f1,
+            "ROC AUC": roc_auc,
+            "PR AUC": pr_auc
+        }
+        results.append(row)
 
-                #update model with params
-                model.set_params(**current_model_params)
-                
-                #Re/Fit model
-                model.fit(train_features, train_target)
-                
-                # Predict target
-                y_pred = model.predict_proba(score_features)
-                
-                # score prediction
-                accuracy, precision, recall, f1 = categorical_scorer(
-                    target=score_target,
-                    y_pred=y_pred[:, 1],
-                    threshold=threshold 
-                )
+        score = row[metric]
+        if score > best_score:
+            best_score = score
+            best_threshold = t
 
-                #AUC values
-                roc_auc = roc_auc_score(score_target, y_pred[:, 1])
-                pr_auc = average_precision_score(score_target, y_pred[:, 1])
-
-                # log this iteration
-                row_data = {
-                    "Model Name": model_name,
-                    "Parameter Name": param_to_optimize,
-                    "Threshold": threshold, # keep constant b/c we are optimizing hyperparameters"
-                    "Parameter": mid, 
-                    "Accuracy": accuracy,
-                    "Precision": precision,
-                    "Recall": recall,
-                    "F1": f1,
-                    "ROC AUC": roc_auc,
-                    "PR AUC": pr_auc
-                }
-
-                row_values = pd.DataFrame([row_data])
-                hyperparameter_table = pd.concat([hyperparameter_table, row_values], ignore_index=True)
-                
-                # Choose metric for optimization
-                score = row_values[col].iloc[0]
-                
-                # update best score
-                if score > best_score:
-                    best_score = score
-
-                    # update model param with param of best score
-                    params = {param_to_optimize: int(round(mid))}
-                    
-
-                    #set new low for next iteration
-                    low = mid + tolerance
-                    
-                else:
-                    # set new high for next iteration
-                    high = mid - tolerance            
-
-        "Return optimized param"
-        # get optimized parameter
-        optimized_param = current_model_params.get(param_to_optimize)
-
-        if metric is None or len(metric) > 1:
-            pass
-            # return multiple metrics
-            #return optimized_param, current_model_params, metrics
-        
-        else:
-            # get best scores of desired metric
-            best_scores = hyperparameter_table.loc[hyperparameter_table[col] == best_score]
-
-            # save best scores of desired metric to output
-            hyperparameter_table = pd.concat([hyperparameter_table, best_scores], ignore_index=True)
-
-            # return best model params, their scores, and the whole scores df
-            #return optimized_param, best_score, metrics
+    results_df = pd.DataFrame(results)
+    return best_threshold, best_score, results_df
 
 
 
@@ -235,7 +239,9 @@ import pandas as pd
 #from src_v_2.model_trainer import ModelTrainer
 
 class ModelSelector:
-    def __init__(self, model_options: dict):
+    def __init__(self, model_options: dict, search_spaces: dict = None, metric: str = "ROC AUC"):
+        self.search_spaces = search_spaces or {}
+        self.metric = metric
         self.model_options = model_options
         self.results = pd.DataFrame()
 
@@ -243,16 +249,46 @@ class ModelSelector:
         X_train, X_val, y_train, y_val = data_split
 
         for category, models in self.model_options.items():
-            for model_name, model in models.items():
-                trainer = ModelTrainer(model, model_name)
-                trainer.fit(X_train, y_train)
-                metrics = trainer.evaluate(X_val, y_val)
-                self.results = pd.concat([self.results, pd.DataFrame([metrics])], ignore_index=True)
+                for model_name, model in models.items():
+                    # Check if we have search space for this model
+                    param_grid = self.search_spaces.get(model_name)
+
+                    if param_grid:
+                        # Hyperparameter optimization
+                        optimizer = HyperparameterOptimizer(
+                            model=model,
+                            param_grid=param_grid,
+                            metric=self.metric,
+                            model_name=model_name
+                        )
+                        best_params, best_score, hp_results = optimizer.optimize(
+                            X_train, y_train, X_val, y_val
+                        )
+
+                        # Log optimization results
+                        self.results = pd.concat([self.results, hp_results], ignore_index=True)
+
+                        # Use best model to get final metrics (already trained)
+                        best_model = optimizer.best_model
+                        trainer = ModelTrainer(best_model, model_name + " (best)")
+                        trainer.fit(X_train, y_train)  # optional: refit if you want
+                        final_metrics = trainer.evaluate(X_val, y_val)
+                        self.results = pd.concat([self.results,
+                                                pd.DataFrame([final_metrics])],
+                                                ignore_index=True)
+                    else:
+                        # No optimization, just train & evaluate once
+                        trainer = ModelTrainer(model, model_name)
+                        trainer.fit(X_train, y_train)
+                        metrics = trainer.evaluate(X_val, y_val)
+                        self.results = pd.concat([self.results,
+                                                pd.DataFrame([metrics])],
+                                                ignore_index=True)
 
         return self.results
 
     def summarize(self):
-        summary = self.results.sort_values(by="ROC AUC", ascending=False)
+        summary = self.results.sort_values(by=self.metric, ascending=False)
         return summary
 
 
@@ -278,14 +314,24 @@ def main():
     df = pd.read_csv("data/Churn.csv")
     random_state = 12345
     model_options = {
-                'Regressions': {
-                    'LogisticRegression': LogisticRegression(random_state=random_state, solver='liblinear', max_iter=200)},
-                'Machine Learning': {
-                    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=random_state),
-                    'RandomForestClassifier': RandomForestClassifier(random_state=random_state),
-                    
-                }
-            }
+        'Regressions': {
+            'LogisticRegression': LogisticRegression(random_state=random_state, solver='liblinear', max_iter=200)
+        },
+        'Machine Learning': {
+            'DecisionTreeClassifier': DecisionTreeClassifier(random_state=random_state),
+            'RandomForestClassifier': RandomForestClassifier(random_state=random_state),
+        }
+    }
+
+    search_spaces = {
+        'RandomForestClassifier': {
+            'n_estimators': [50, 100],
+            'max_depth': [5, 10, None]
+        },
+        'DecisionTreeClassifier': {
+            'max_depth': [3, 5, 10]
+        }
+    }
     #view(df)
 
     def test_case(model_options = model_options): 
@@ -304,7 +350,7 @@ def main():
         X_train, X_val = preprocess_data(X_train, X_val)
 
         # Models
-        selector = ModelSelector(model_options)
+        selector = ModelSelector(model_options, search_spaces=search_spaces, metric="ROC AUC") # 
 
         # Train & Evaluate
         results = selector.run_all((X_train, X_val, y_train, y_val))
