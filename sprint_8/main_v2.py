@@ -99,9 +99,9 @@ class ModelTrainer:
 
     def evaluate(self, X_val, y_val):
         """Evaluate with multiple metrics."""
-        probs = self.model.predict_proba(X_val)
+        #probs = self.model.predict_proba(X_val)
         preds = self.model.predict(X_val)
-        #probs = getattr(self.model, "predict_proba", lambda X: None)(X_val)
+        probs = getattr(self.model, "predict_proba", lambda X: None)(X_val)
         roc_auc = roc_auc_score(y_val, probs[:, 1]) if probs is not None else None
 
         precision, recall, _ = precision_recall_curve(y_val, probs[:, 1]) if probs is not None else (None, None, None)
@@ -156,9 +156,9 @@ class HyperparameterOptimizer:
         keys = list(self.param_grid.keys())
         values = [self.param_grid[k] for k in keys]
 
-        for combo in product(*values):
-            params = dict(zip(keys, combo))
-            yield params
+        for combo in product(*values): # get very combination of values by key
+            params = dict(zip(keys, combo)) # create dict of key: value combos
+            yield params # all combinations
 
     def optimize(self, X_train, y_train, X_val, y_val):
         """
@@ -172,7 +172,7 @@ class HyperparameterOptimizer:
             trainer = ModelTrainer(model, self.model_name)
             trainer.fit(X_train, y_train)
             metrics = trainer.evaluate(X_val, y_val)
-            metrics_with_params = {**metrics, **params}
+            metrics_with_params = {**metrics, **params, 'Model Name': self.model_name}
 
             self.results = pd.concat([self.results,
                                       pd.DataFrame([metrics_with_params])],
@@ -270,12 +270,12 @@ class ModelSelector:
 
                         # Use best model to get final metrics (already trained)
                         best_model = optimizer.best_model
-                        trainer = ModelTrainer(best_model, model_name + " (best)")
-                        trainer.fit(X_train, y_train)  # optional: refit if you want
-                        final_metrics = trainer.evaluate(X_val, y_val)
-                        self.results = pd.concat([self.results,
-                                                pd.DataFrame([final_metrics])],
-                                                ignore_index=True)
+                        # trainer = ModelTrainer(best_model, model_name + " (best)")
+                        # trainer.fit(X_train, y_train)  # optional: refit if you want
+                        # final_metrics = trainer.evaluate(X_val, y_val)
+                        #self.results = pd.concat([self.results,
+                        #                        pd.DataFrame([final_metrics])],
+                        #                        ignore_index=True)
                     else:
                         # No optimization, just train & evaluate once
                         trainer = ModelTrainer(model, model_name)
@@ -334,7 +334,7 @@ def main():
     }
     #view(df)
 
-    def test_case(model_options = model_options): 
+    def test_case(model_options: dict, search_spaces: dict = None, random_state: int = 12345): 
         #raw logistical regression
         # Clean
         handler = DataHandler(df, target_col="Exited")
@@ -350,15 +350,15 @@ def main():
         X_train, X_val = preprocess_data(X_train, X_val)
 
         # Models
-        selector = ModelSelector(model_options, search_spaces=search_spaces, metric="ROC AUC") # 
+        selector = ModelSelector(model_options, search_spaces=search_spaces, metric="ROC AUC")
 
         # Train & Evaluate
-        results = selector.run_all((X_train, X_val, y_train, y_val))
+        results = selector.run_all(data_split=(X_train, X_val, y_train, y_val))
         summary = selector.summarize()
-        print(summary.head())
+        print(summary)
 
     # raw models
-    test_case(model_options=model_options)
+    test_case(model_options=model_options, search_spaces=search_spaces, random_state=random_state)
     
     model_options = {
                 'Regressions': {
