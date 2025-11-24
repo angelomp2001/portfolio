@@ -79,22 +79,22 @@ model_options = {
     }
 }
 
-# print(f'class weight adjustment...')
-# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-#     features = features,
-#     target = target,
-#     n_rows = None,
-#     n_target_majority = None,
-#     ordinal_cols = None,
-#     random_state = random_state,
-#     model_options = model_options,
-#     split_ratio = (0.6, 0.2, 0.2),
-#     missing_values_method= 'drop',
-#     fill_value = None,
-#     target_threshold = 0.5,
-#     metric=metric,
-#     target_type='classification'
-# )
+print(f'class weight adjustment...')
+best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
+    features = features,
+    target = target,
+    n_rows = None,
+    n_target_majority = None,
+    ordinal_cols = None,
+    random_state = random_state,
+    model_options = model_options,
+    split_ratio = (0.6, 0.2, 0.2),
+    missing_values_method= 'drop',
+    fill_value = None,
+    target_threshold = 0.5,
+    metric=metric,
+    target_type='classification'
+)
 
 # lr_balanced_validation_scores = model_scores
 

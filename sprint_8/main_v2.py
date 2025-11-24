@@ -2,6 +2,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.utils import resample, shuffle
 
 class DataHandler:
     def __init__(self, df: pd.DataFrame, target_col: str):
@@ -36,6 +37,9 @@ class DataHandler:
             self.df = self.df.fillna(fill_value)
         else:
             raise ValueError(f"Unknown method: {missing_values_method}")
+        
+        self.target = self.df[self.target_col]
+        self.features = self.df.drop(columns=[self.target_col])
         return self.df
 
     def split(self, split_ratio=(0.6, 0.2, 0.2), random_state=42):
@@ -52,6 +56,100 @@ class DataHandler:
         )
 
         return (X_train, X_val, X_test, y_train, y_val, y_test)
+    
+def upsample(
+    df: pd.DataFrame,
+    target: str,
+    n_target_minority: int | None = None,
+    n_rows: int | None = None,
+    random_state: int = 12345,
+) -> pd.DataFrame:
+    """
+    Upsample a DataFrame for two possible reasons:
+    
+    1. To boost the minority class if it is too small (via n_target_minority).
+    2. To enlarge the overall DataFrame if the total number of rows is too small (via n_rows).
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing features and the target column.
+    target : str
+        Name of the target column containing class labels (e.g., 0/1).
+    n_target_minority : int, optional
+        If provided and greater than the current minority count, the minority class will be
+        upsampled (with replacement) to this size.
+    n_rows : int, optional
+        If provided and greater than the DataFrame's current size (after any minority upsampling),
+        the entire DataFrame will be upsampled (with replacement) to this overall number of rows.
+    random_state : int, default=12345
+        Random state for reproducibility.
+    
+    Returns
+    -------
+    pd.DataFrame
+        A new DataFrame with the requested upsampling applied.
+    
+    Raises
+    ------
+    ValueError
+        If n_target_minority is less than the current minority count, or
+        if n_rows is less than the current DataFrame size (after minority upsampling).
+    """
+    if target not in df.columns:
+        raise ValueError(f"target column '{target}' not found in DataFrame")
+
+    # Count classes
+    target_counts = df[target].value_counts()
+    if len(target_counts) < 2:
+        raise ValueError("Target column must have at least two classes to define a minority/majority.")
+
+    minority_label = target_counts.idxmin()
+    majority_label = target_counts.idxmax()
+
+    df_minority = df[df[target] == minority_label]
+    df_majority = df[df[target] == majority_label]
+
+    # 1) Upsample minority class if requested
+    if n_target_minority is not None:
+        if n_target_minority < len(df_minority):
+            raise ValueError(
+                f"n_target_minority ({n_target_minority}) is less than the current minority "
+                f"count ({len(df_minority)})."
+            )
+        df_minority = resample(
+            df_minority,
+            replace=True,
+            n_samples=int(n_target_minority),
+            random_state=random_state,
+        )
+
+    # Recombine
+    df_upsampled = pd.concat([df_majority, df_minority], ignore_index=True)
+
+    # 2) Upsample overall DataFrame if requested
+    if n_rows is not None:
+        if n_rows < len(df_upsampled):
+            raise ValueError(
+                f"n_rows ({n_rows}) is less than the current total rows ({len(df_upsampled)})."
+            )
+        df_upsampled = resample(
+            df_upsampled,
+            replace=True,
+            n_samples=int(n_rows),
+            random_state=random_state,
+        )
+
+    # If any upsampling happened, shuffle once more for good measure
+    if n_target_minority is not None or n_rows is not None:
+        df_upsampled = shuffle(df_upsampled, random_state=random_state).reset_index(drop=True)
+        print(f"df_upsampled shape: {df_upsampled.shape}")
+        print("-- upsample() complete")
+        return df_upsampled
+    else:
+        print("(no upsampling)")
+        # No changes; return original DataFrame unchanged
+        return df
 
 def preprocess_data(X_train, X_test):
     # Separate categorical and numerical columns
@@ -101,19 +199,27 @@ class ModelTrainer:
         """Evaluate with multiple metrics."""
         #probs = self.model.predict_proba(X_val)
         preds = self.model.predict(X_val)
-        probs = getattr(self.model, "predict_proba", lambda X: None)(X_val)
-        roc_auc = roc_auc_score(y_val, probs[:, 1]) if probs is not None else None
+        if not hasattr(self.model, "predict_proba"):
+            probs = None
+        else:
+            probs = self.model.predict_proba(X_val)
 
-        precision, recall, _ = precision_recall_curve(y_val, probs[:, 1]) if probs is not None else (None, None, None)
-        pr_auc = auc(recall, precision) if recall is not None else None
+        if probs is not None:
+            roc_auc = roc_auc_score(y_val, probs[:, 1])
+            precision, recall, _ = precision_recall_curve(y_val, probs[:, 1])
+            pr_auc = auc(recall, precision)
+        else:
+            roc_auc = None
+            pr_auc = None
+            precision = recall = None
 
         self.results = {
             "Model Name": self.name,
             #"Threshold": threshold,  
             "Accuracy": accuracy_score(y_val, preds),
-            "Precision":precision_score(y_val, preds),
-            "Recall": recall_score(y_val, preds),
-            "F1": f1_score(y_val, preds),
+            "Precision":precision_score(y_val, preds, zero_division=0),
+            "Recall": recall_score(y_val, preds, zero_division=0),
+            "F1": f1_score(y_val, preds, zero_division=0),
             "ROC AUC": roc_auc,
             "PR AUC": pr_auc
         }
@@ -127,7 +233,19 @@ import numpy as np
 from copy import deepcopy
 
 #from src_v_2.model_trainer import ModelTrainer  # adjust import path as needed
+def get_actual_max_depth(model):
+    """Return the maximum depth actually achieved by the trained model."""
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.tree import DecisionTreeClassifier
 
+    if isinstance(model, RandomForestClassifier):
+        # Max depth over all trees in the forest
+        return max(est.tree_.max_depth for est in model.estimators_)
+    elif isinstance(model, DecisionTreeClassifier):
+        return model.tree_.max_depth
+    else:
+        return None  # For models where depth doesn't apply
+    
 class HyperparameterOptimizer:
     def __init__(self, model, param_grid: dict, metric: str = "ROC AUC", model_name: str = None):
         """
@@ -171,21 +289,47 @@ class HyperparameterOptimizer:
 
             trainer = ModelTrainer(model, self.model_name)
             trainer.fit(X_train, y_train)
-            metrics = trainer.evaluate(X_val, y_val)
-            metrics_with_params = {**metrics, **params, 'Model Name': self.model_name}
+            eval_table = trainer.evaluate(X_val, y_val)
 
-            self.results = pd.concat([self.results,
-                                      pd.DataFrame([metrics_with_params])],
-                                     ignore_index=True)
+            # --- get actual max depth after fitting ---
+            actual_max_depth = get_actual_max_depth(model)
 
-            # Get score of the optimization metric
-            score = metrics.get(self.metric)
+            # Copy params so we can overwrite max_depth if it was None
+            adjusted_params = params.copy()
+            if "max_depth" in adjusted_params and adjusted_params["max_depth"] is None:
+                # replace None with the actual depth from the fitted model
+                adjusted_params["max_depth"] = actual_max_depth
+
+            metrics_with_params = {**eval_table, **adjusted_params}
+
+            self.results = pd.concat([
+                self.results, pd.DataFrame([metrics_with_params])],
+                ignore_index=True)
+            
+            score = eval_table.get(self.metric)
             if score is not None and score > self.best_score:
                 self.best_score = score
                 self.best_params = params
-                self.best_model = model  # model is already fitted
+                self.best_model = model
+            
+        best_per_score_rows = []
+        metrics = self.results.select_dtypes(include=['float64']).columns.tolist()
+        for metric in metrics:
+            idx_best_value = self.results[metric].idxmax()
+            best_row = self.results.loc[idx_best_value]
 
-        return self.best_params, self.best_score, self.results
+            row_dict = {
+                "Metric Name": metric,
+                "Best Score": best_row[metric],
+                "Model Name": best_row["Model Name"],
+                **{hp: best_row[hp] for hp in self.param_grid.keys()},
+            }
+
+            best_per_score_rows.append(row_dict)
+
+        best_per_score = pd.DataFrame(best_per_score_rows)
+        
+        return self.best_params, self.best_score, best_per_score #self.results
     
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, precision_recall_curve, auc
 
@@ -201,6 +345,10 @@ def optimize_threshold(model, X_val, y_val, metric: str = "F1"):
     best_score = -np.inf
     best_threshold = 0.5
 
+    roc_auc = roc_auc_score(y_val, probs)
+    precision_curve, recall_curve, _ = precision_recall_curve(y_val, probs)
+    pr_auc = auc(recall_curve, precision_curve)
+
     for t in thresholds:
         preds = (probs >= t).astype(int)
 
@@ -208,9 +356,6 @@ def optimize_threshold(model, X_val, y_val, metric: str = "F1"):
         prec = precision_score(y_val, preds, zero_division=0)
         rec = recall_score(y_val, preds, zero_division=0)
         f1 = f1_score(y_val, preds, zero_division=0)
-        roc_auc = roc_auc_score(y_val, probs)
-        precision_curve, recall_curve, _ = precision_recall_curve(y_val, probs)
-        pr_auc = auc(recall_curve, precision_curve)
 
         row = {
             "Threshold": t,
@@ -219,7 +364,7 @@ def optimize_threshold(model, X_val, y_val, metric: str = "F1"):
             "Recall": rec,
             "F1": f1,
             "ROC AUC": roc_auc,
-            "PR AUC": pr_auc
+            "PR AUC": pr_auc,
         }
         results.append(row)
 
@@ -261,21 +406,14 @@ class ModelSelector:
                             metric=self.metric,
                             model_name=model_name
                         )
-                        best_params, best_score, hp_results = optimizer.optimize(
+                        best_params, best_score, best_per_score = optimizer.optimize(
                             X_train, y_train, X_val, y_val
                         )
 
                         # Log optimization results
-                        self.results = pd.concat([self.results, hp_results], ignore_index=True)
+                        'currently overwriting results with only latest model score'
+                        self.results = best_per_score #pd.concat([self.results, best_per_score], ignore_index=True)
 
-                        # Use best model to get final metrics (already trained)
-                        best_model = optimizer.best_model
-                        # trainer = ModelTrainer(best_model, model_name + " (best)")
-                        # trainer.fit(X_train, y_train)  # optional: refit if you want
-                        # final_metrics = trainer.evaluate(X_val, y_val)
-                        #self.results = pd.concat([self.results,
-                        #                        pd.DataFrame([final_metrics])],
-                        #                        ignore_index=True)
                     else:
                         # No optimization, just train & evaluate once
                         trainer = ModelTrainer(model, model_name)
@@ -288,8 +426,11 @@ class ModelSelector:
         return self.results
 
     def summarize(self):
-        summary = self.results.sort_values(by=self.metric, ascending=False)
-        return summary
+        self.results
+        # mask = self.results['Metric Name'] == self.metric
+        # top = self.results[mask]
+        # sorted_results = pd.concat([top, self.results[~mask]])
+        return self.results
 
 
 # main.py
@@ -334,16 +475,18 @@ def main():
     }
     #view(df)
 
-    def test_case(model_options: dict, search_spaces: dict = None, random_state: int = 12345): 
+    # Clean
+    handler = DataHandler(df, target_col="Exited")
+    handler.clean(drop_cols=["RowNumber", "CustomerId", "Surname"])
+    #see(handler.df)
+
+    handler.missing_values(missing_values_method = 'drop')
+
+    # Split
+
+
+    def base_test_case(model_options: dict, search_spaces: dict = None, random_state: int = 12345): 
         #raw logistical regression
-        # Clean
-        handler = DataHandler(df, target_col="Exited")
-        handler.clean(drop_cols=["RowNumber", "CustomerId", "Surname"])
-        #see(handler.df)
-
-        handler.missing_values(missing_values_method = 'drop')
-
-        # Split
         data_split = handler.split(split_ratio=(0.6, 0.2, 0.2), random_state=random_state)
 
         X_train, X_val, X_test, y_train, y_val, y_test = data_split
@@ -354,11 +497,10 @@ def main():
 
         # Train & Evaluate
         results = selector.run_all(data_split=(X_train, X_val, y_train, y_val))
-        summary = selector.summarize()
-        print(summary)
+        print(results)
 
     # raw models
-    test_case(model_options=model_options, search_spaces=search_spaces, random_state=random_state)
+    base_test_case(model_options=model_options, search_spaces=search_spaces, random_state=random_state)
     
     model_options = {
                 'Regressions': {
@@ -366,7 +508,41 @@ def main():
                 }
     
     # logisticRegression(class_weight = 'balanced')
-    #test_case(model_options=model_options)
+    base_test_case(model_options=model_options)
+
+    def upsample_case(df: pd.DataFrame, target: str, model_options: dict = None, random_state: int = 12345):
+        # upsample
+        df_balanced = upsample(
+            df=df,
+            target=target,
+            n_target_minority=5000,
+            n_rows=None,            
+            random_state=42,
+        )
+
+        handler_balanced = DataHandler(df_balanced, target_col=target)
+        data_split_balanced = handler_balanced.split(split_ratio=(0.6, 0.2, 0.2), random_state=random_state)
+        X_train_balanced, X_val_balanced, X_test_balanced, y_train_balanced, y_val_balanced, y_test_balanced = data_split_balanced
+        X_train_balanced, X_val_balanced = preprocess_data(X_train_balanced, X_val_balanced)
+        # Models
+        selector_balanced = ModelSelector(model_options or {}, search_spaces=search_spaces, metric=None)
+        # Train & Evaluate
+        results_balanced = selector_balanced.run_all(data_split=(X_train_balanced, X_val_balanced, y_train_balanced, y_val_balanced))
+        print(results_balanced)
+
+    # upsampling case
+    model_options = {
+        'Regressions': {
+            'LogisticRegression': LogisticRegression(random_state=random_state, solver='liblinear', max_iter=200)
+        },
+        'Machine Learning': {
+            'DecisionTreeClassifier': DecisionTreeClassifier(random_state=random_state),
+            'RandomForestClassifier': RandomForestClassifier(random_state=random_state),
+        }
+    }
+    upsample_case(df=df, target="Exited", model_options=model_options, random_state=random_state)
+
+
 
 
 if __name__ == "__main__":
