@@ -289,7 +289,7 @@ class HyperparameterOptimizer:
 
             trainer = ModelTrainer(model, self.model_name)
             trainer.fit(X_train, y_train)
-            eval_table = trainer.evaluate(X_val, y_val)
+            val_results = trainer.evaluate(X_val, y_val)
 
             # --- get actual max depth after fitting ---
             actual_max_depth = get_actual_max_depth(model)
@@ -300,13 +300,13 @@ class HyperparameterOptimizer:
                 # replace None with the actual depth from the fitted model
                 adjusted_params["max_depth"] = actual_max_depth
 
-            metrics_with_params = {**eval_table, **adjusted_params}
+            metrics_with_params = {**val_results, **adjusted_params}
 
             self.results = pd.concat([
                 self.results, pd.DataFrame([metrics_with_params])],
                 ignore_index=True)
             
-            score = eval_table.get(self.metric)
+            score = val_results.get(self.metric)
             if score is not None and score > self.best_score:
                 self.best_score = score
                 self.best_params = params
@@ -318,9 +318,23 @@ class HyperparameterOptimizer:
             idx_best_value = self.results[metric].idxmax()
             best_row = self.results.loc[idx_best_value]
 
+            # Rebuild a model with the best hyperparameters for this metric
+            best_params_for_metric = {hp: best_row[hp] for hp in self.param_grid.keys()}
+            model_for_train = deepcopy(self.base_model)
+            model_for_train.set_params(**best_params_for_metric)
+
+            trainer_train = ModelTrainer(model_for_train, self.model_name)
+            trainer_train.fit(X_train, y_train)
+
+            # Evaluate on TRAIN for the same metric
+            train_results = trainer_train.evaluate(X_train, y_train)
+            train_score = train_results.get(metric)
+            
             row_dict = {
                 "Metric Name": metric,
-                "Best Score": best_row[metric],
+                "Best Val Score": best_row[metric],
+                "Train Score": train_score,
+                'overfitting_gap': best_row[metric] - train_score,
                 "Model Name": best_row["Model Name"],
                 **{hp: best_row[hp] for hp in self.param_grid.keys()},
             }
