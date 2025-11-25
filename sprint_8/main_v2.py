@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.utils import resample, shuffle
+from typing import Optional
 
 class DataHandler:
     def __init__(self, df: pd.DataFrame, target_col: str):
@@ -335,7 +336,7 @@ def get_actual_max_depth(model):
         return None  # For models where depth doesn't apply
     
 class HyperparameterOptimizer:
-    def __init__(self, model, param_grid: dict, metric: str = "ROC AUC", model_name: str = None):
+    def __init__(self, model, param_grid: dict, metric: str = "F1", model_name: str = None):
         """
         param_grid example:
         {
@@ -435,7 +436,7 @@ class HyperparameterOptimizer:
     
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, precision_recall_curve, auc
 
-def optimize_threshold(model, X_val, y_val, metric: str = "F1"):
+def threshold_optimizer(model, X_val, y_val, metric: str = "F1"):
     """
     Optimize probability threshold for a binary classifier.
     Assumes model has predict_proba.
@@ -486,13 +487,13 @@ import pandas as pd
 #from src_v_2.model_trainer import ModelTrainer
 
 class ModelSelector:
-    def __init__(self, model_options: dict, search_spaces: dict = None, metric: str = "ROC AUC"):
+    def __init__(self, model_options: dict, search_spaces: dict = None, metric: str = "F1"):
         self.search_spaces = search_spaces or {}
         self.metric = metric
         self.model_options = model_options
         self.results = pd.DataFrame()
 
-    def run_all(self, data_split):
+    def run_all(self, data_split, optimize_threshold: bool = False):
         X_train, X_val, y_train, y_val = data_split
 
         for category, models in self.model_options.items():
@@ -515,6 +516,18 @@ class ModelSelector:
                         # Log optimization results
                         'currently overwriting results with only latest model score'
                         self.results = best_per_score #pd.concat([self.results, best_per_score], ignore_index=True)
+
+                        print(f'test1 {optimize_threshold}')
+                        # --- threshold optimization on the best model ---
+                        if optimize_threshold and hasattr(optimizer.best_model, "predict_proba"):
+                            best_threshold, best_thr_score, _ = threshold_optimizer(
+                                optimizer.best_model, X_val, y_val, metric=self.metric
+                            )
+                            
+                            # attach threshold info to the selected metric row (e.g., ROC AUC)
+                            metric_mask = self.results["Metric Name"] == self.metric
+                            self.results.loc[metric_mask, "Best Threshold"] = best_threshold
+                            self.results.loc[metric_mask, f"Best Threshold Score ({self.metric})"] = best_thr_score
 
                     else:
                         # No optimization, just train & evaluate once
@@ -595,7 +608,7 @@ def main():
         X_train, X_val = preprocess_data(X_train, X_val)
 
         # Models
-        selector = ModelSelector(model_options, search_spaces=search_spaces, metric="ROC AUC")
+        selector = ModelSelector(model_options, search_spaces=search_spaces, metric="F1")
 
         # Train & Evaluate
         results = selector.run_all(data_split=(X_train, X_val, y_train, y_val))
@@ -612,9 +625,20 @@ def main():
     # logisticRegression(class_weight = 'balanced')
     base_test_case(model_options=model_options)
 
+    def sampler_analysis(df: pd.DataFrame, target: str, model_options: dict = None, search_spaces: dict = None, optimize_threshold: bool = False,random_state: int = 12345):
+        handler_balanced = DataHandler(df, target_col=target)
+        data_split_balanced = handler_balanced.split(split_ratio=(0.6, 0.2, 0.2), random_state=random_state)
+        X_train_balanced, X_val_balanced, X_test_balanced, y_train_balanced, y_val_balanced, y_test_balanced = data_split_balanced
+        X_train_balanced, X_val_balanced = preprocess_data(X_train_balanced, X_val_balanced)
+        # Models
+        selector_balanced = ModelSelector(model_options or {}, search_spaces=search_spaces, metric='F1')
+        # Train & Evaluate
+        results_balanced = selector_balanced.run_all(data_split=(X_train_balanced, X_val_balanced, y_train_balanced, y_val_balanced), optimize_threshold=optimize_threshold)
+        return results_balanced
+
     def upsample_case(df: pd.DataFrame, target: str, model_options: dict = None, random_state: int = 12345):
         # upsample
-        df_balanced = upsample(
+        df_upsampled = upsample(
             df=df,
             target=target,
             n_target_minority=5000,
@@ -622,19 +646,26 @@ def main():
             random_state=42,
         )
 
-        handler_balanced = DataHandler(df_balanced, target_col=target)
-        data_split_balanced = handler_balanced.split(split_ratio=(0.6, 0.2, 0.2), random_state=random_state)
-        X_train_balanced, X_val_balanced, X_test_balanced, y_train_balanced, y_val_balanced, y_test_balanced = data_split_balanced
-        X_train_balanced, X_val_balanced = preprocess_data(X_train_balanced, X_val_balanced)
-        # Models
-        selector_balanced = ModelSelector(model_options or {}, search_spaces=search_spaces, metric=None)
-        # Train & Evaluate
-        results_balanced = selector_balanced.run_all(data_split=(X_train_balanced, X_val_balanced, y_train_balanced, y_val_balanced))
-        print(results_balanced)
-
-    def downsample_case(df: pd.DataFrame, target: str, model_options: dict = None, random_state = random_state)
+        results = sampler_analysis(df=df_upsampled, target=target, model_options=model_options, random_state=random_state)
+        print(results)
         
 
+    def downsample_case(df: pd.DataFrame, target: str, model_options: dict = None, random_state = random_state):
+        # downsample
+        df_downsampled = downsample(
+            df=df,
+            target=target,
+            n_target_majority=2000,
+            n_rows=None,
+            random_state=random_state,
+        )
+        results = sampler_analysis(df=df_downsampled, target=target, model_options=model_options, random_state=random_state)
+        print(results)
+
+    def hyperparameter_grid_search_case(df: pd.DataFrame, target: str, model_options: dict = None, search_spaces: dict = None, optimize_threshold: bool = False, random_state: int = 12345):
+        results = sampler_analysis(df=df, target=target, model_options=model_options, search_spaces=search_spaces, optimize_threshold = optimize_threshold, random_state=random_state)
+        print(results)
+    
     # upsampling case
     model_options = {
         'Regressions': {
@@ -647,64 +678,18 @@ def main():
     }
     upsample_case(df=df, target="Exited", model_options=model_options, random_state=random_state)
 
+    # downsampling case
+    downsample_case(df=df, target="Exited", model_options=model_options, random_state=random_state)
+
+    # hyperparameter grid search case
+    hyperparameter_grid_search_case(df=df, target="Exited", model_options=model_options, search_spaces=search_spaces, random_state=random_state)
+
+    # hyperparameter grid search with threshold optimization
+    hyperparameter_grid_search_case(df=df, target="Exited", model_options=model_options, search_spaces=search_spaces, optimize_threshold=True, random_state=random_state)
+
+
 
 
 
 if __name__ == "__main__":
     main()
-
-#_________________________
-
-# # downsampling
-
-# print(f'downsampling...')
-# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-#     features = features,
-#     target = target,
-#     n_rows = 4000,
-#     n_target_majority = .2*10000,
-#     ordinal_cols = None,
-#     random_state = random_state,
-#     model_options = None,
-#     split_ratio = (0.6, 0.2, 0.2),
-#     missing_values_method= 'drop',
-#     fill_value = None,
-#     target_threshold = 0.5,
-#     target_type='classification',
-#     metric=metric
-# )
-# downsampling_scores = model_scores
-
-# # applying all models but with optimal hyperparameters to test set:
-# print(f'testing all models on test data...')
-# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model_df, model_scores, _ , model_options = best_model_picker(
-#     features = transformed_data[2],
-#     target = transformed_data[3],
-#     test_features= transformed_data[4],
-#     test_target= transformed_data[5],
-#     random_state = random_state,
-#     model_options= model_options,
-#     model_params = optimized_hyperparameters,
-#     target_threshold = 0.5,
-#     missing_values_method= 'drop',
-#     metric=metric,
-#     target_type='classification',
-# )
-
-# # applying all models but with optimal hyperparameters to test set AND optimized target threshold:
-# print(f'testing all models on test data...')
-# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model_df, model_scores, transformed_data, model_options = best_model_picker(
-#     features = transformed_data[2],
-#     target = transformed_data[3],
-#     test_features= transformed_data[4],
-#     test_target= transformed_data[5],
-#     random_state = random_state,
-#     model_options= model_options,
-#     model_params = optimized_hyperparameters,
-#     target_threshold = None,
-#     missing_values_method= 'drop',
-#     metric=metric,
-#     target_type='classification',
-# )
-
-# 'Conclusion: RandomForest is generally a superior model.  Downsampling was the best way to maximize Accuracy.'
