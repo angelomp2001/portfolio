@@ -56,7 +56,95 @@ class DataHandler:
         )
 
         return (X_train, X_val, X_test, y_train, y_val, y_test)
+
+def downsample(
+    df: pd.DataFrame,
+    target: str = None,
+    n_target_majority: Optional[int] = None,
+    n_rows: Optional[int] = None,
+    random_state: int = 12345,
+) -> pd.DataFrame:
+    """
+    Downsample a DataFrame to address a class imbalance issue or to reduce overall size. 
+    Optionally, rows with missing values in the target column can be dropped before processing.
     
+    Parameters:
+        df (pd.DataFrame): DataFrame containing features and the target column.
+        target (str): Name of the target column containing categorical labels (e.g., 0/1).
+        n_target_majority (Optional[int]): The majority class will be downsampled to this total.
+        n_rows (Optional[int]): Downsample majority to meet this overall size. 
+        random_state (int): Random state for reproducibility.
+        dropna (bool): If True, drop rows where the target column is NaN before processing.
+    
+    Returns:
+        pd.DataFrame: A new DataFrame with the requested downsampling applied.
+    
+    """
+    if n_target_majority is not None or n_rows is not None:
+        # Identify majority (and implicitly minority) using value_counts.
+        target_counts = df[target].value_counts()
+        # Identify the majority label as the one with the highest count
+        majority_label = target_counts.idxmax()
+        
+        # Split the DataFrame into majority and non-majority (minority) groups.
+        df_majority = df[df[target] == majority_label]
+        df_minority = df[df[target] != majority_label]
+        
+        # QC params
+        if n_target_majority is not None and n_target_majority >= len(df_majority):
+            raise ValueError(
+                f"desired_majority ({n_target_majority}) is greater than the current majority count ({len(df_majority)})."
+            )
+        elif n_rows is not None and n_rows > len(df):
+            raise ValueError(f'n_rows larger than df')
+        else:
+            pass
+
+        #downsample
+        if n_target_majority is not None:
+            # downsample target majority
+            df_majority = resample(
+                df_majority,
+                replace=False,
+                n_samples=int(n_target_majority),
+                random_state=random_state
+            )
+            # Recombine the groups (minority remains unchanged).
+            df_downsampled = pd.concat([df_majority, df_minority]).reset_index(drop=True)
+        
+        elif n_rows is not None and n_target_majority is None:
+            #downsample df
+            df_downsampled = resample(
+                    df,
+                    replace=False,
+                    n_samples=n_rows,
+                    random_state=random_state
+                )
+        else:
+            pass
+            
+        if n_target_majority is not None and n_rows is not None:
+            #downsample df_downsampled to n_rows
+            df_downsampled = resample(
+                    df_downsampled,
+                    replace=False,
+                    n_samples=n_rows,
+                    random_state=random_state
+            )
+        else:
+            pass
+        
+        # Shuffle the final DataFrame to mix the rows.
+        df_downsampled = shuffle(df_downsampled, random_state=random_state).reset_index(drop=True)
+        
+        print(f'df_downsampled shape: {df_downsampled.shape}')
+        print(f'--- downsample() complete\n')
+        return df_downsampled
+    
+    else:
+        print(f'(no downsampling)')
+        return df
+
 def upsample(
     df: pd.DataFrame,
     target: str,
@@ -334,7 +422,7 @@ class HyperparameterOptimizer:
                 "Metric Name": metric,
                 "Best Val Score": best_row[metric],
                 "Train Score": train_score,
-                'overfitting_gap': best_row[metric] - train_score,
+                'overfitting_gap': round(best_row[metric] - train_score, ndigits=2),
                 "Model Name": best_row["Model Name"],
                 **{hp: best_row[hp] for hp in self.param_grid.keys()},
             }
@@ -544,6 +632,9 @@ def main():
         results_balanced = selector_balanced.run_all(data_split=(X_train_balanced, X_val_balanced, y_train_balanced, y_val_balanced))
         print(results_balanced)
 
+    def downsample_case(df: pd.DataFrame, target: str, model_options: dict = None, random_state = random_state)
+        
+
     # upsampling case
     model_options = {
         'Regressions': {
@@ -563,51 +654,6 @@ if __name__ == "__main__":
     main()
 
 #_________________________
-
-# # balanced logistic regression
-# model_options = {
-#     'Regressions': {
-#         'LogisticRegression': LogisticRegression(random_state=12345, solver='liblinear', class_weight='balanced')
-#     }
-# }
-
-# print(f'class weight adjustment...')
-# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-#     features = features,
-#     target = target,
-#     n_rows = None,
-#     n_target_majority = None,
-#     ordinal_cols = None,
-#     random_state = random_state,
-#     model_options = model_options,
-#     split_ratio = (0.6, 0.2, 0.2),
-#     missing_values_method= 'drop',
-#     fill_value = None,
-#     target_threshold = 0.5,
-#     metric=metric,
-#     target_type='classification'
-# )
-
-# lr_balanced_validation_scores = model_scores
-
-# # upsampling
-# print(f'upsampling...')
-# best_scores_summary_df, optimized_hyperparameters, best_scores_by_model, model_scores, transformed_data, model_options = best_model_picker(
-#     features = features,
-#     target = target,
-#     n_rows = None,
-#     n_target_majority = 5000,
-#     ordinal_cols = None,
-#     random_state = random_state,
-#     model_options = None,
-#     split_ratio = (0.6, 0.2, 0.2),
-#     missing_values_method= 'drop',
-#     fill_value = None,
-#     target_threshold = 0.5,
-#     metric=metric,
-#     target_type='classification'
-# )
-# upsampling_scores = model_scores
 
 # # downsampling
 
