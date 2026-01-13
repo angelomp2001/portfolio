@@ -33,5 +33,8 @@ remove_duplicates(order_products)
 # verify that col values make sense
 verify_data(orders)
 
+#probe: Is there a difference in 'order_hour_of_day' distributions on Wednesdays and Saturdays?
+
+
 if __name__ == '__main__':
     main()
