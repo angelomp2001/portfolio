@@ -1,88 +1,28 @@
-'''
-objective: which of the plans brings in more revenue in order to adjust the advertising budget?
-'''
-
 # Loading all the libraries	
 import matplotlib.pyplot as plt
 from scipy import stats as st
 
-from src.data_preprocessing import load_data, view_raw_df, append_datetime_features
+from src.data_preprocessing import load_all_data, inspect_initial_data, view_raw_df, append_datetime_features
 from src.data_preprocessing import set_datatype, fill_missing, deduplicate
+from src.data_preprocessing import prepare_data_types, handle_missing_values, remove_duplicates, enrich_data
 from src.data_preprocessing import n_monthly_calls, n_monthly_messages, n_monthly_internet, monthly_revenue, sum_plan_revenue, mean_plan_revenue, plot_revenue, monthly_minutes_by_plan
 
-# python.exe -m pip install --upgrade pip
-
-#paths
-calls = 'data/megaline_calls.csv'
-internet = 'data/megaline_internet.csv'
-messages = 'data/megaline_messages.csv'
-plans = 'data/megaline_plans.csv'
-users = 'data/megaline_users.csv'
-
 # Load the data files into different DataFrames
-calls_df = load_data(calls)
-internet_df = load_data(internet)
-messages_df = load_data(messages)
-plans_df = load_data(plans)
-users_df = load_data(users)
+dfs = load_all_data()
+inspect_initial_data(dfs)
 
-# save as dictionary
-dfs ={
-    'calls_df':calls_df,
-'internet_df':internet_df,
-'messages_df' :messages_df ,
-'plans_df' :plans_df ,
-'users_df': users_df
-}
+# Process data (Fix types, fill missing, deduplicate, enrich)
+dfs = prepare_data_types(dfs)
+dfs = handle_missing_values(dfs)
+dfs = remove_duplicates(dfs)
+dfs = enrich_data(dfs)
 
-#view_raw_df(dfs)
-[view_raw_df(df) for df in dfs.values()]
-
-# plans_df
-print(plans_df.info())
-
-# Print a sample of data for plans
-print(plans_df.sample(2, random_state = 1))
-
-# fix data
-# based on EDA
-calls_df['id'] = set_datatype(calls_df['id'], 'str')
-calls_df['user_id'] = set_datatype(calls_df['user_id'], 'str')
-internet_df['id'] = set_datatype(internet_df['id'], 'str')
-internet_df['user_id'] = set_datatype(internet_df['user_id'], 'str')
-messages_df['id'] = set_datatype(messages_df['id'], 'str')
-messages_df['user_id'] = set_datatype(messages_df['user_id'], 'str')
-users_df['user_id'] = set_datatype(users_df['user_id'], 'str')
-
-
-#convert datetime var to datetime object year-month format
-calls_df['call_date'] = set_datatype(calls_df['call_date'])
-internet_df['session_date'] = set_datatype(internet_df['session_date'])
-messages_df['message_date'] = set_datatype(messages_df['message_date'])
-users_df['reg_date'] = set_datatype(users_df['reg_date'])
-users_df['churn_date'] = set_datatype(users_df['churn_date'])
-users_df['user_id'] = set_datatype(users_df['user_id'], 'str')
-
-#fillna
-fill_missing(users_df,['churn_date'])
-fill_missing(calls_df,['call_date'])
-fill_missing(internet_df,['session_date'])
-fill_missing(messages_df,['message_date'])
-
-# deduplicate
-calls_df = deduplicate(calls_df)
-internet_df = deduplicate(internet_df)
-messages_df = deduplicate(messages_df)
-users_df = deduplicate(users_df)
-plans_df = deduplicate(plans_df)
-
-#do this for all datetime cols
-print(f'dtype: {calls_df['call_date'].dtype}') #object
-append_datetime_features(calls_df,['call_date'])
-append_datetime_features(internet_df,['session_date'])
-append_datetime_features(messages_df,['message_date'])
-append_datetime_features(users_df,['reg_date'])
-append_datetime_features(users_df,['churn_date'])
+# Unpack DataFrames for further processing
+calls_df = dfs['calls_df']
+internet_df = dfs['internet_df']
+messages_df = dfs['messages_df']
+plans_df = dfs['plans_df']
+users_df = dfs['users_df']
 
 # Print the general/summary information about the users' DataFrame
 view_raw_df(users_df)
@@ -147,3 +87,20 @@ plot_revenue(sum_plan_revenue_results, mean_plan_revenue_results)
     #H1: the means are not the same. 
     #alpha = 0.05
 results, nj_results = monthly_minutes_by_plan(user_calls_messages_traffic_plan_by_month)
+
+# Final Conclusions based on statistical tests
+print("\n--- Final Conclusion ---")
+print("Objective: which of the plans brings in more revenue in order to adjust the advertising budget?")
+print(f"Surf vs Ultimate Revenue Difference p-value: {results.pvalue}")
+if results.pvalue < 0.05:
+    print("Result: Reject H0. There is a statistically significant difference in revenue between the plans.")
+    # Assuming from EDA that Surf often has higher total revenue due to volume, but Ultimate has consistent higher per-user revenue.
+    # The script output shows the means/totals to confirm which is 'more'.
+else:
+    print("Result: Fail to reject H0. No statistically significant difference found in revenue between plans.")
+
+print(f"NY-NJ vs Other Regions Revenue Difference p-value: {nj_results.pvalue}")
+if nj_results.pvalue < 0.05:
+    print("Result: Reject H0. Geography (NY-NJ) significantly impacts revenue.")
+else:
+    print("Result: Fail to reject H0. Geography does not significantly impact revenue.")

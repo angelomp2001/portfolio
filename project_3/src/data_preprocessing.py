@@ -2,10 +2,72 @@ import pandas as pd
 import numpy as np    
 import matplotlib.pyplot as plt
 from scipy import stats as st
+from src.config import calls, internet, messages, plans, users
 
 
 def load_data(path):
     return pd.read_csv(path)
+
+def load_all_data():
+    return {
+        'calls_df': load_data(calls),
+        'internet_df': load_data(internet),
+        'messages_df': load_data(messages),
+        'plans_df': load_data(plans),
+        'users_df': load_data(users)
+    }
+
+def inspect_initial_data(dfs):
+    print(view_raw_df(dfs))
+    
+    print("\nPlans Info:")
+    print(dfs['plans_df'].info())
+    print(dfs['plans_df'].sample(2, random_state=1))
+
+def prepare_data_types(dfs):
+    # Fix IDs
+    for name in ['calls_df', 'internet_df', 'messages_df', 'users_df']:
+        if 'id' in dfs[name].columns:
+            dfs[name]['id'] = set_datatype(dfs[name]['id'], 'str')
+        if 'user_id' in dfs[name].columns:
+            dfs[name]['user_id'] = set_datatype(dfs[name]['user_id'], 'str')
+            
+    # Fix Dates
+    dfs['calls_df']['call_date'] = set_datatype(dfs['calls_df']['call_date'])
+    dfs['internet_df']['session_date'] = set_datatype(dfs['internet_df']['session_date'])
+    dfs['messages_df']['message_date'] = set_datatype(dfs['messages_df']['message_date'])
+    dfs['users_df']['reg_date'] = set_datatype(dfs['users_df']['reg_date'])
+    dfs['users_df']['churn_date'] = set_datatype(dfs['users_df']['churn_date'])
+    return dfs
+
+def handle_missing_values(dfs):
+    # Logic specifically for filling churn_date based on max activity
+    users = dfs['users_df']
+    users['churn_date'].fillna(pd.NaT, inplace=True)
+    
+    calls_last = dfs['calls_df'].groupby('user_id')['call_date'].max()
+    internet_last = dfs['internet_df'].groupby('user_id')['session_date'].max()
+    messages_last = dfs['messages_df'].groupby('user_id')['message_date'].max()
+    
+    activity = pd.concat([calls_last, internet_last, messages_last], axis=1).max(axis=1)
+    
+    users['churn_date'].fillna(users['user_id'].map(activity), inplace=True)
+    users['churn_date'].fillna(activity.max(), inplace=True)
+    return dfs
+
+def remove_duplicates(dfs):
+    for name in dfs:
+        dfs[name] = deduplicate(dfs[name])
+    return dfs
+
+def enrich_data(dfs):
+    print(f"dtype: {dfs['calls_df']['call_date'].dtype}")
+    append_datetime_features(dfs['calls_df'], ['call_date'])
+    append_datetime_features(dfs['internet_df'], ['session_date'])
+    append_datetime_features(dfs['messages_df'], ['message_date'])
+    append_datetime_features(dfs['users_df'], ['reg_date'])
+    append_datetime_features(dfs['users_df'], ['churn_date'])
+    return dfs
 
 def view_raw_df(dfs):
     if isinstance(dfs, pd.DataFrame):
