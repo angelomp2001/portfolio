@@ -132,14 +132,17 @@ def hyperparameter_optimizer(model, param_name, low, high, train_features, train
         else:
             high = mid
     
+    # Set best param to model
+    model.set_params(**{param_name: best_param})
+    
     return best_param, best_score
 
 #model picker
 def model_picker(features, target):
     # Split data
     df = pd.concat([features, target], axis=1)  # Ensure features and target are combined into a single DataFrame
-    df_train, df_other = train_test_split(df, test_size=0.4, random_state=12345)  # training is 60%
-    df_valid, df_test = train_test_split(df_other, test_size=0.5, random_state=12345)  # valid & test = .4 * .5 = .2 each
+    df_train, df_other = train_test_split(df, test_size=0.4, random_state=12345, stratify=df[target.name])  # training is 60%
+    df_valid, df_test = train_test_split(df_other, test_size=0.5, random_state=12345, stratify=df_other[target.name])  # valid & test = .4 * .5 = .2 each
     print(f'\
     df_train:{df_train.shape}\n\
     df_valid: {df_valid.shape}\n\
@@ -165,18 +168,19 @@ def model_picker(features, target):
         valid_features=valid_features, valid_target=valid_target, model_name = "DecisionTreeClassifier"
     )
     
-    # Optimize max_depth and n_estimators for RandomForestClassifier
+    # Optimize max_depth for RandomForestClassifier
     rfc_max_depth, _ = hyperparameter_optimizer(
         rfc_model, 'max_depth', 1, 20,
         train_features=train_features, train_target=train_target,
         valid_features=valid_features, valid_target=valid_target, model_name = "RandomForestClassifier"
     )
+
+    # Optimize n_estimators for RandomForestClassifier, while keeping max_depth as the optimal value
     rfc_n_estimators, rfc_best_score = hyperparameter_optimizer(
         rfc_model, 'n_estimators', 10, 100,
         train_features=train_features, train_target=train_target,
         valid_features=valid_features, valid_target=valid_target, model_name = "RandomForestClassifier"
     )
-    rfc_model.set_params(max_depth=rfc_max_depth, n_estimators=rfc_n_estimators)
     
     # Fit Logistic Regression model (no hyperparameter optimization in this setup)
     lr_model.fit(train_features, train_target)
@@ -193,7 +197,6 @@ def model_picker(features, target):
     # Retrieve the best model
     if best_model_name == 'DecisionTreeClassifier':
         best_model = dtc_model
-        best_model.set_params(max_depth=dtc_max_depth)
     elif best_model_name == 'RandomForestClassifier':
         best_model = rfc_model
     else:
@@ -209,5 +212,5 @@ def model_picker(features, target):
     print(f"Optimal Hyperparameters: {best_model.get_params()}")
     print(f"Test Score: {best_model_test_score}")
     
-    return best_model, best_model_test_score
+    return best_model, best_model_test_score, train_features, train_target, test_features, test_target
 
