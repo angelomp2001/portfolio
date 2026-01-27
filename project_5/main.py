@@ -1,4 +1,6 @@
 from src.data_preprocessing import *
+from src.eda import *
+from src.analysis import *
 
 path = 'data/games.csv'
 df = load_data(path)
@@ -41,7 +43,7 @@ view(df, 'missing values')
 # Analyze patterns in missing values
 #MAR by col
 missing_cols = ['name', 'year_of_release', 'genre', 'critic_score', 'user_score', 'rating']
-analyze(missing_cols)
+analyze(df, missing_cols)
 
 # Total sales across all regions
 total_sales(df)
@@ -102,14 +104,14 @@ name_multi_platform_total_sales = name_platform_total_sales_reset_index[
 print(name_multi_platform_total_sales.shape[0])
 
 # compare_name_total_sales_by_platform
-compare_name_total_sales_x_platform = compare_name_total_sales_x_platform(name_multi_platform_total_sales)
+compare_name_sales_result = compare_name_total_sales_x_platform(name_multi_platform_total_sales)
 
 # genre performance
 genre = genre_performance(df_relevant)
 
 
 # market share for each genre
-year_genre = market_share(genre)
+year_genre = market_share(df_relevant,genre)
 
 # a year from two months ago
 see(year_genre[-12:-2])
@@ -133,7 +135,7 @@ genre_performance_region = genre_performance_by_region(df_relevant)
 print(genre_performance_region)
 
 # ESRB rating impact
-rationg_performance = esrb_impact(df_relevant)
+rating_performance = esrb_impact(df_relevant)
 
 #hypothesis testing
 hypothesis_test(df_relevant)
