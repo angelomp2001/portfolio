@@ -5,6 +5,7 @@ import joblib
 import json
 import os
 
+# Create the app instance
 app = FastAPI()
 
 # Global variables for model and metrics
@@ -30,8 +31,11 @@ def load_model():
     global best_model, metrics
     
     if os.path.exists(MODEL_PATH):
-        best_model = joblib.load(MODEL_PATH)
-        print(f"Model loaded successfully from {MODEL_PATH}")
+        try:
+            best_model = joblib.load(MODEL_PATH)
+            print(f"Model loaded successfully from {MODEL_PATH}")
+        except Exception as e:
+            print(f"Error loading model: {e}")
     else:
         print(f"Model file {MODEL_PATH} not found. Please run main.py first.")
 
@@ -62,5 +66,13 @@ def predict(behavior: UserBehavior):
     
     # Convert input to DataFrame
     input_data = pd.DataFrame([behavior.model_dump()])
-    prediction = best_model.predict(input_data)
-    return {"is_ultra_prediction": int(prediction[0])}
+    try:
+        prediction = best_model.predict(input_data)
+        return {"is_ultra_prediction": int(prediction[0])}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
+
+if __name__ == "__main__":
+    import uvicorn
+    # Allow running the app directly with python app.py
+    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
