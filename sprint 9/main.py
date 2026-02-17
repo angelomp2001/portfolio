@@ -1,93 +1,147 @@
 '''
 Find the best place to look for oil, accounting for profit and risk of loss.
 '''
-from src.data_explorers import *
-from src.data_preprocessing import *
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 
-# load data
-geo_data_0 = 'data/geo_data_0.csv'
-geo_data_1 = 'data/geo_data_1.csv'
-geo_data_2 = 'data/geo_data_2.csv'
+import datetime
 
-df_1 = load_data(geo_data_0)
-df_2 = load_data(geo_data_1)
-df_3 = load_data(geo_data_2)
+# Custom modules
+from src.data_explorers import view, see
+from src.data_preprocessing import load_data, preprocess_data
+from src.analysis import train_and_predict, bootstrap_profit, analyze_region_profitability
 
-## EDA
-view(df_1, view='headers')
-view(df_2, view='headers')
-view(df_3, view='headers')
+# ==========================================
+# Configuration / Constants
+# ==========================================
+EXPERIMENT_ID = "EXP-001"
+EXPERIMENT_DESC = "Split EDA from Analysis, Generalize Functions"
+BUDGET = 100_000_000  # $100 million
+WELLS_TO_SELECT = 200  # Top 200 wells to develop
+REVENUE_PER_BARREL = 4.5  # Revenue per barrel
+REVENUE_PER_UNIT = 4500  # Revenue per unit (1000 barrels)
+POINTS_STUDIED = 500  # Number of points to sample for bootstrap
+BOOTSTRAP_SAMPLES = 1000  # Number of bootstrap iterations
+RANDOM_STATE = 42
 
-
-#preprocess data
-df_1, df_2, df_3, dfs = preprocess_data(df_1, df_2, df_3)
-
-# visualize data
-see(df_1)
-see(df_2)
-see(df_3)
-
-
-## initialize tables
-# statistics table
-region_stats = pd.DataFrame(columns=['mean predicted reserves', #
-                                    'RMSE', # 
-                                    'Model score', # 
-                                    'Mean profit', # 
-                                    'Standard deviation of profit', # 
-                                    '95% confidence interval for profit', # 
-                                    'Samples mean', #
-                                    'Samples std', # 
-                                    '95% confidence interval for samples profit', #
-                                    'risk of loss'], #
-                                    index=['region_1', 'region_2', 'region_3'])
-
-# table to store profit samples
-region_profit_samples = {
-    'region_1': [],
-    'region_2': [],
-    'region_3': []
+DATA_PATHS = {
+    'region_1': 'data/geo_data_0.csv',
+    'region_2': 'data/geo_data_1.csv',
+    'region_3': 'data/geo_data_2.csv'
 }
 
+def run_eda(dfs):
+    """
+    Executes Exploratory Data Analysis steps.
+    """
+    print("\n--- Starting Exploratory Data Analysis ---\n")
+    for name, df in dfs.items():
+        print(f"Inspecting {name}:")
+        view(df, view='headers')
+        see(df, x=name)
+        print("-" * 30)
+    print("\n--- EDA Complete ---\n")
 
-#constants provided by the client:
-BUDGET, WELLS_TO_SELECT, REVENUE_PER_BARREL, REVENUE_PER_UNIT, POINTS_STUDIED, model, random_state = inputs(
-    BUDGET = 100_000_000,  # $100 million
-    WELLS_TO_SELECT = 200,  # Top 200 wells
-    REVENUE_PER_BARREL = 4.5,  # $4.5 per barrel
-    REVENUE_PER_UNIT = 4500,  # $4,500 per thousand barrels
-    POINTS_STUDIED = 500,  # Study 500 points per region
-    model = LinearRegression(),
-    random_state = 42
-)
+def run_analysis(dfs):
+    """
+    Executes the core analysis: model training, profit calculation, and risk assessment.
+    """
+    print("\n--- Starting Profitability Analysis ---\n")
+    
+    results_summary = []
+    
+    for region, df in dfs.items():
+        print(f"Analyzing {region}...")
+        
+        # Train and Evaluate Model
+        model = LinearRegression()
+        predictions_df, score, rmse = train_and_predict(
+            df, 
+            target_col='product', 
+            model=model, 
+            test_size=0.25, 
+            random_state=RANDOM_STATE
+        )
+        
+        print(f"  Model Score (R2): {score:.4f}")
+        print(f"  RMSE: {rmse:.4f}")
+        
+        # Bootstrap Profit Distribution
+        profits = bootstrap_profit(
+            results_df=predictions_df,
+            count=WELLS_TO_SELECT,
+            revenue_per_unit=REVENUE_PER_UNIT,
+            budget=BUDGET,
+            repeats=BOOTSTRAP_SAMPLES,
+            n_samples=POINTS_STUDIED,
+            random_state=RANDOM_STATE
+        )
+        
+        # Calculate Risk and Statistics
+        stats = analyze_region_profitability(profits)
+        stats['region'] = region
+        results_summary.append(stats)
+        
+        print(f"  Mean Profit: ${stats['mean_profit']:,.2f}")
+        print(f"  Risk of Loss: {stats['risk_of_loss_percent']:.2f}%")
+        print(f"  95% Confidence Interval: (${stats['ci_lower']:,.2f}, ${stats['ci_upper']:,.2f})")
+        print("-" * 30)
 
-# top 200 wells
-top_200_wells(dfs, region_stats, model, random_state)
+    # Final Recommendation
+    print("\n--- Final Recommendation ---\n")
+    summary_df = pd.DataFrame(results_summary).set_index('region')
+    print(summary_df)
+    
+    best_region = summary_df[summary_df['risk_of_loss_percent'] < 2.5]['mean_profit'].idxmax()
+    print(f"\nRecommended Region for Development: {best_region}")
+    
+    return summary_df, best_region
 
-# Findings
-print(region_stats)
-region_stats['Mean profit'] = pd.to_numeric(region_stats['Mean profit'], errors='coerce')
-top_region = region_stats['Mean profit'].idxmax()
-print(f'Region with the highest mean profit: {region_stats.loc[top_region]}')
+def log_results(summary_df, best_region):
+    """
+    Logs the experiment results to RESULTS.md and EXPERIMENTS.md.
+    """
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Format the summary table for markdown
+    markdown_table = summary_df.to_markdown()
+    
+    # 1. Log to RESULTS.md
+    with open("RESULTS.md", "a") as f:
+        f.write(f"\n## Results for {EXPERIMENT_ID} - {timestamp}\n")
+        f.write(f"**Description**: {EXPERIMENT_DESC}\n")
+        f.write(f"**Parameters**: Budget=${BUDGET:_}, Revenue/Unit=${REVENUE_PER_UNIT}, Wells={WELLS_TO_SELECT}, Samples={BOOTSTRAP_SAMPLES}\n\n")
+        f.write(f"### Regional Performance Summary\n")
+        f.write(markdown_table + "\n\n")
+        f.write(f"**Recommended Region**: {best_region}\n")
+        f.write("-" * 40 + "\n")
+        
+    print(f"Results logged to RESULTS.md")
 
-'''
-Conclusion
-We analyzed all three regions.
+    # 2. Log to EXPERIMENTS.md (High-level log)
+    with open("EXPERIMENTS.md", "a") as f:
+        f.write(f"| {timestamp} | {EXPERIMENT_ID} | {EXPERIMENT_DESC} | {best_region} | Success |\n")
+        
+    print(f"Experiment logged to EXPERIMENTS.md")
 
-Region 1 contains the most amount of product and profit, on average.
+def main():
+    # 1. Load Data
+    raw_dfs = load_data(DATA_PATHS)
+    
+    # 2. Preprocess
+    dfs = preprocess_data(raw_dfs)
+    
+    # 3. Exploratory Data Analysis (Optional / Configurable)
+    # Uncomment next line to run EDA
+    # run_eda(dfs)
+    
+    # 4. Analysis
+    summary_df, best_region = run_analysis(dfs)
+    
+    # 5. Log Results
+    log_results(summary_df, best_region)
 
-Its mean profit is $34,685,297.87, and its risk of loss is 1.5%.
-
-Model prediction quality for region 1 was low at 27%.
-
-Bootstrapping was used for all regions to capture variability around region profitability.
-
-We calculated profit using the top 200 most profitable wells from repeated sampling of 500 wells to simulate realistic business scenarios.
-
-When accounting for profit variability, region 2 offered the highest profit at $6,450,501.83.
-
-Furthermore, region 2 offered the lowest risk of loss at 0.6% (95% of profit values ranged from 
-11,879,197.54).
-
-In conclusion, region 2 is proposed to minimize risk of loss.
-'''
+if __name__ == "__main__":
+    main()
