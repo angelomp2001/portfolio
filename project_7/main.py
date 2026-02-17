@@ -4,6 +4,8 @@ from src.pipeline import select_best_model
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import accuracy_score
 import joblib
+import json
+import os
 
 def main():
     #import data
@@ -45,9 +47,26 @@ def main():
         f.write(f"| Experiment | Accuracy | Baseline | Performance Ratio |\n")
         f.write(f"| Refactor-Data-Preprocessing | {best_accuracy_score:.4f} | {baseline_accuracy:.4f} | {model_performance:.4f} |\n")
         
-    # Save the best model
-    joblib.dump(best_model, 'model.joblib')
-    print("Model saved to model.joblib")
+    # Ensure models directory exists
+    os.makedirs('models', exist_ok=True)
+
+    # Save the model
+    MODEL_PATH = 'models/best_model.joblib'
+    joblib.dump(best_model, MODEL_PATH)
+    print(f"Model saved to {MODEL_PATH}")
+    
+    # Save the metadata
+    metadata = {
+        "best_accuracy_score": float(best_accuracy_score),
+        "average": float(average),
+        "model_performance": float(model_performance),
+        "baseline_accuracy": float(baseline_accuracy)
+    }
+    METADATA_PATH = 'models/metadata.json'
+    with open(METADATA_PATH, 'w') as f:
+        json.dump(metadata, f, indent=4)
+        
+    print(f"Metadata saved to {METADATA_PATH}")
 
 if __name__ == "__main__":
     main()
