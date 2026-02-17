@@ -1,31 +1,20 @@
-# Experiment: Split EDA and Analysis (EXP-001)
+# Experiment: FastAPI Analysis (EXP-002)
 
 ## Goal
-To separate Exploratory Data Analysis (EDA) from the core Analysis logic in `main.py` and generalize helper functions to remove hardcoded dependencies.
+Create a FastAPI web application to interactively upload new geological data, check for duplicates, and visualize analysis results against existing regions.
 
 ## Changes
 
-### 1. New Module: `src/analysis.py`
--   **Created** to encapsulate all modeling and statistical analysis logic.
--   **Functions**:
-    -   `train_and_predict`: Handles model training and validation prediction generation. Returns specific metrics (R2, RMSE).
-    -   `calculate_profit`: Pure function to calculate profit for a given set of predictions and target values, accepting all economic parameters as arguments.
-    -   `bootstrap_profit`: Performs bootstrap resampling to estimate profit distribution.
-    -   `analyze_region_profitability`: Computes risk metrics (Risk of Loss, Confidence Intervals) from bootstrapped profits.
+1.  **Docs Reorganization**: Moved `agency_readme.md`, `EXPERIMENTS.md`, `RESULTS.md`, `experiment_log.md` into `docs/`.
+2.  **Dependencies**: Added `fastapi`, `uvicorn`, `python-multipart`, `jinja2`, `aiofiles`.
+3.  **New Modules**:
+    *   `src/utils.py`: Implements `calculate_file_hash` and `check_duplicate` using SHA-256.
+    *   `src/visualization.py`: Generates base64-encoded profit distribution (`KDE plot`) and risk (`Bar chart`) plots using `matplotlib`/`seaborn`.
+    *   `app.py`: FastAPI implementation serving an HTML interface. Handles file upload, duplicate rejection, analysis orchestration, and report rendering.
+4.  **Updated README.md**: Added instructions for running the FastAPI server.
 
-### 2. Refactored `src/data_preprocessing.py`
--   **Removed**: `profit`, `stats`, `product_predictions`, `bootstrap_predictions`, `top_200_wells`, and `inputs`.
--   **Retained & Cleaned**: `load_data` (simplified to handle dict/list of paths) and `preprocess_data` (focused on cleaning/deduplication).
--   **Rationale**: This file now strictly handles *data preparation*, adhering to Single Responsibility Principle.
-
-### 3. Refactored `main.py`
--   **Configuration**: Moved all "magic numbers" (Budget, Revenue, Wells count) to top-level constants at the start of the script. This makes the experiment parameters easily tunable.
--   **workflow Split**:
-    -   `run_eda(dfs)`: Encapsulates all visualization steps. Can be toggled on/off.
-    -   `run_analysis(dfs)`: specific function for the modeling and profit estimation loop.
--   **Logic**: Replaced the implicit global state execution with explicit function calls passing the configuration constants.
-
-## Justification
--   **Modularity**: Splitting EDA and Analysis allows for running the expensive analysis without regenerating plots every time.
--   **Generalization**: Removing hardcoded values (`100_000_000`, `4500`, etc.) from helper functions makes the code reusable for different scenarios or data.
--   **Readability**: Meaningful function names (`calculate_profit` vs `profit`) and explicit arguments make the data flow transparent.
+## Logic Overview
+*   **Upload**: User uploads a CSV.
+*   **Validation**: Server hashes content, compares with `data/*.csv`. If match found, rejects with exact filename.
+*   **Analysis**: Used existing `src/analysis` functions (`train_and_predict`, `bootstrap_profit`) but wrapped in a loop within `app.py` to aggregate results dynamically.
+*   **Result**: Returns an HTML page with a summary table, Recommended Region, and embedded visualization plots.
