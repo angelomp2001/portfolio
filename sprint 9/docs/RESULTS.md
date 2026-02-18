@@ -53,3 +53,16 @@
 
 **Recommended Region**: region_2
 ----------------------------------------
+## Results for EXP-001 - 2026-02-17 23:06:56
+**Description**: Split EDA from Analysis, Generalize Functions
+**Parameters**: Budget=$100_000_000, Revenue/Unit=$4500, Wells=200, Samples=1000
+
+### Regional Performance Summary
+| region   |   mean_profit |   risk_of_loss_percent |         ci_lower |    ci_upper |
+|:---------|--------------:|-----------------------:|-----------------:|------------:|
+| region_1 |   6.19885e+06 |                    1.5 | 449910           | 1.23181e+07 |
+| region_2 |   6.4505e+06  |                    0.6 |      1.47326e+06 | 1.18792e+07 |
+| region_3 |   5.77572e+06 |                    2.8 | -77028.1         | 1.23498e+07 |
+
+**Recommended Region**: region_2
+----------------------------------------
