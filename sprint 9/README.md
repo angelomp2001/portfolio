@@ -21,14 +21,16 @@ After analyzing the three regions, **Region 2** is recommended for development.
 
 ## Project Structure
 
-```
 ├── data/                   # Directory containing dataset CSVs (geo_data_0.csv, etc.)
+├── docs/                   # Documentation and Experiment logs
 ├── src/                    # Source code for helper modules
 │   ├── analysis.py         # Functions for statistical analysis and modeling
 │   ├── data_explorers.py   # Functions for Exploratory Data Analysis (view, see)
-│   └── data_preprocessing.py # Functions for data loading and cleaning
-├── main.py                 # Main execution script to run the analysis
-├── agency_readme.md        # Internal workflow documentation
+│   ├── data_preprocessing.py # Functions for data loading and cleaning
+│   ├── utils.py            # Utility functions (hashing, duplicates)
+│   └── visualization.py    # Plotting functions for web interface
+├── app.py                  # FastAPI Web Application
+├── main.py                 # CLI execution script
 ├── requirements.txt        # Python dependencies
 └── README.md               # This project documentation
 ```
@@ -47,18 +49,23 @@ After analyzing the three regions, **Region 2** is recommended for development.
 
 ## Usage
 
-To run the analysis and view the results:
-
+### CLI Analysis
+To run the standard analysis in the terminal:
 ```bash
 python main.py
 ```
 
-The script will:
-1.  Load and inspect the data.
-2.  Preprocess the datasets.
-3.  Visualize distributions.
-4.  Train the model and calculate statistics.
-5.  Output the recommended region and detailed statistics to the console.
+### Web Interface (FastAPI)
+To launch the interactive web dashboard where you can upload new data:
+```bash
+uvicorn app:app --reload
+```
+Then open your browser at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+The web interface allows you to:
+1.  Upload a new CSV file.
+2.  Automatically check for duplicates (rejected if found).
+3.  Visualize profit distributions and risk analysis for all regions.
 
 ## Methodology
 

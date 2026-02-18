@@ -109,7 +109,7 @@ def log_results(summary_df, best_region):
     markdown_table = summary_df.to_markdown()
     
     # 1. Log to RESULTS.md
-    with open("RESULTS.md", "a") as f:
+    with open("docs/RESULTS.md", "a") as f:
         f.write(f"\n## Results for {EXPERIMENT_ID} - {timestamp}\n")
         f.write(f"**Description**: {EXPERIMENT_DESC}\n")
         f.write(f"**Parameters**: Budget=${BUDGET:_}, Revenue/Unit=${REVENUE_PER_UNIT}, Wells={WELLS_TO_SELECT}, Samples={BOOTSTRAP_SAMPLES}\n\n")
@@ -121,7 +121,7 @@ def log_results(summary_df, best_region):
     print(f"Results logged to RESULTS.md")
 
     # 2. Log to EXPERIMENTS.md (High-level log)
-    with open("EXPERIMENTS.md", "a") as f:
+    with open("docs/EXPERIMENTS.md", "a") as f:
         f.write(f"| {timestamp} | {EXPERIMENT_ID} | {EXPERIMENT_DESC} | {best_region} | Success |\n")
         
     print(f"Experiment logged to EXPERIMENTS.md")
