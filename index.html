@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: #f0f4fa;
+            color: #22223b;
+        }
+
+        /* nav: */
+        header {
+            background: linear-gradient(90deg, #3a86ff 0%, #8338ec 100%);
+            color: #fff;
+            padding: 10px 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            letter-spacing: 2px;
+        }
+
+        nav {
+            margin-top: 10px;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #06d6a0;
+            text-decoration: underline;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 50px 20px;
+            background: #f4f4f4;
+        }
+
+        /* Welcome! title: */
+        .hero h2 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #3a86ff;
+        }
+
+        .section {
+            padding: 20px;
+            background: #f8f7ff;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 900px;
+            box-shadow: 0 2px 8px rgba(131, 56, 236, 0.07);
+        }
+
+        .skills ul,
+        .projects ul,
+        .experience ul,
+        .education ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        /* block color: */
+        .skills li,
+        .projects li,
+        .experience li,
+        .education li {
+            background: linear-gradient(90deg, #06d6a0 0%, #06d6a0 100%);
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            color: #22223b;
+            box-shadow: 0 1px 4px rgba(58, 134, 255, 0.08);
+        }
+
+        /* footer: */
+        .contact {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(90deg, #8338ec 0%, #06d6a0 100%);
+            color: #fff;
+        }
+
+        .contact a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .contact a:hover {
+            text-decoration: underline;
+            color: #3a86ff;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Portfolio</h1>
+        <nav>
+            <a href="#hero" aria-label="Go to Home section">Home</a>
+            <a href="#about" aria-label="Go to About section">About Me</a>
+            <a href="#skills" aria-label="Go to Skills section">Skills</a>
+            <a href="#projects" aria-label="Go to Projects section">Projects</a>
+            <a href="#experience" aria-label="Go to Experience section">Experience</a>
+            <a href="#education" aria-label="Go to Education section">Education</a>
+        </nav>
+    </header>
+
+    <section id="hero" class="hero">
+        <h2>Welcome!</h2>
+        <p>Hello! I'm Angelo, a data scientist with experience in data-driven decision-making, management,
+            and analytics. Welcome!</p>
+    </section>
+
+    <section id="about" class="section">
+        <h2>About Me</h2>
+        <p>Highly analytical professional with a strong capability for both independent and collaborative work. Adept at
+            tackling complex problems, leveraging critical thinking and teamwork to deliver insightful solutions.</p>
+    </section>
+
+    <section id="skills" class="section skills">
+        <h2>Skills</h2>
+        <ul>
+            <li><strong>Soft Skills:</strong> Research, Written and Spoken Communication, Strategic Thinking, Teamwork,
+                Adaptability, Creative Problem-solving</li>
+            <li><strong>Hard Skills:</strong> Python, SQL, Excel, Quickbooks, Google Workspace, Microsoft Office</li>
+        </ul>
+    </section>
+
+    <section id="projects" class="section projects">
+        <h2>Projects</h2>
+        <ul>
+
+            <li>
+               <strong>Interconnect Telecom - Customer Churn Prediction</strong>
+                <ul>
+                    <li>Goal and Challenges: Forecast customer churn to enable targeted promotional offers and special plan options. The challenge was to build a predictive model using several separate sources of data.</li>
+                    <li>Methods: Data was downloaded, preprocessed (handling missing values, correcting data types), and merged. Feature engineering was performed, and data was vectorized. Various models were tested, and the best model was chosen based on the Area Under the Receiver Operating Characteristic curve (AUC-ROC).</li>
+                    <li>Results: The CatBoostClassifier was selected as the best model due to its high test AUC (0.920) and relatively small difference from the training AUC (0.980), suggesting minimal overfitting.</li>
+                </ul>
+            </li>
+            
+            <li>
+               <strong>Good Seed Supermarket - Age Verification for Alcohol Sales</strong>
+                <ul>
+                    <li>Goal and Challenges: Evaluate if Data Science can help the supermarket chain adhere to alcohol laws by developing a model to verify people's age from checkout camera images.</li>
+                    <li>Methods: A computer vision model was trained to estimate age from images of customers buying alcohol. Model performance on training and validation datasets was monitored.</li>
+                    <li>Results: After 20 epochs, the model exhibited overfitting, with significantly higher performance on the training data compared to the validation data. The model's average error of 7-8 years in age estimation was deemed potentially unacceptable for the client's needs. A binary classification model (under 21 vs. 21 and older) was suggested as a potentially more accurate and suitable alternative. Computer vision might be better for identifying items in the cart.</li>
+                </ul>
+            </li>
+
+            <li>
+               <strong>Film Junky Union - Movie Review Sentiment Analysis</strong>
+                <ul>
+                    <li>Goal and Challenges: Develop a system to automatically detect negative movie reviews using a dataset of IMDB reviews with polarity labels. The model needs to achieve an F1 score of at least 0.85.</li>
+                    <li>Methods: Models were trained with text preprocessing techniques, including stopword removal and lemmatization, and different classifiers such as Logistic Regression and LGBMClassifier were tested. Performance was evaluated using Accuracy, F1-score, Average Precision Score (APS), and Receiver Operating Characteristic Area Under the Curve (ROC AUC) on training and test datasets.</li>
+                    <li>Results: Logistic Regression with stopword removal achieved highest performance (Accuracy: 0.94/0.88, F1: 0.94/0.88, APS: 0.98/0.95, ROC AUC: 0.98/0.95). Lemmatization reduced performance. LGBMClassifier overfitted the training data.</li>
+                </ul>
+            </li>
+            
+            <li>
+               <strong>Sweet Lift Taxi - Taxi Order Prediction</strong>
+                <ul>
+                    <li>Goal and Challenges: Predict the number of taxi orders at airports for the next hour to attract more drivers during peak hours. The challenge was to build a time series model that outperformed a simple baseline.</li>
+                    <li>Methods: The data was resampled and aggregated from minutes to hours. Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF) plots were used to determine AR and MA lags, revealing a 24-hour periodicity. Models were successively built to account for autocorrelation, moving average, differencing, and seasonality using SARIMAX.</li>
+                    <li>Results: The SARIMAX model, accounting for all factors, achieved a Root Mean Squared Error (RMSE) of approximately 45, which was the same as simply predicting the median value. Therefore, predicting the median was the simplest effective solution. A rolling median may be needed as time passes.</li>
+                </ul>
+            </li>              
+                 
+            <li>
+               <strong>Rusty Bargain - Used Car Price Prediction App</strong>
+                <ul>
+                    <li>Goal and Challenges: Develop an app to determine the market value of used cars by building a model that predicts price based on technical specifications and trim versions. The project emphasized prediction quality (RMSE), speed, and training time.</li>
+                    <li>Methods: Different models were trained, including Linear Regression, Random Forest Regressor, LightGBM, CatBoost, and XGBoost, with various hyperparameters. Data preprocessing steps included data cleaning, feature engineering, categorical encoding, and feature scaling. RMSE was used to evaluate model performance.</li>
+                    <li>Results: CatBoost achieved the lowest RMSE (2026.19) and was further optimized by tuning the max_depth hyperparameter to 4, which lowered the RMSE further to 2008.14. While XGBoost had the highest training time, CatBoost was identified as the best model due to its superior balance of low RMSE and relatively fast training speed.</li>
+                </ul>
+            </li>   
+
+            
+            <li>
+               <strong>Sure Tomorrow Insurance - Machine Learning for Business Solutions</strong>
+                <ul>
+                    <li>Goal and Challenges: Apply machine learning to solve several business tasks, including customer similarity analysis for marketing, insurance benefit prediction, and data protection. Challenges include assessing model performance compared to a baseline, predicting the number of benefits using linear regression, and ensuring data privacy without compromising model utility.</li>
+                    <li>Methods: Explored k-Nearest Neighbors (kNN) for customer similarity, investigated the impact of feature scaling on kNN and linear regression, and considered data obfuscation techniques. Evaluated the effects of scaling on model performance and feature importance in linear regression. </li>
+                    <li>Results: Demonstrated that feature scaling significantly impacts kNN performance due to distance calculation dominance by larger-scale features. Scaling does not change RMSE for the Linear Regression, because any changes in the variables will be absorbed into the new coefficients. A technique for data obfuscation using an invertible matrix was proposed.</li>
+                </ul>
+            </li>    
+            
+            <li>
+               <strong>Zyfra - Gold Recovery Optimization</strong>
+                <ul>
+                    <li>Goal and Challenges: Develop a machine learning model that predicts the amount of gold recovered from gold ore, leveraging data on extraction and purification. The challenge lies in the incomplete nature of the data, where some features are missing in the test set and the test set lacks target values. The model will help Zyfra optimize production and eliminate unprofitable parameters.</li>
+                    <li>Methods: Formulae provided by the client was used to validate the data. Data was then standardized and normalized. I performed a Metal Concentration Analysis to measure the effect of purification stages. I also measured particle size distribution to identify significant discrepancies. Finally, I checked total substance concentrations for abnormal values. Linear regression, decision tree, and random forest were tested using cross-validation and against the Symmetric Mean Absolute Percentage Error (sMAPE) evaluation metric.</li>
+                    <li>Results: Random forest model achieving the best performance.</li>
+                </ul>
+            </li>    
+
+            <li>
+               <strong>OilyGiant - Investment Risk of Loss Minimization</strong>
+                <ul>
+                    <li>Goal and Challenges: Identify the most profitable region for new oil well development by analyzing oil quality and reserve volumes across three regions. The challenge was to build predictive models for each region, calculate potential profits, and assess risks using bootstrapping to make an economically sound decision.</li>
+                    <li>Methods: Linear regression models were trained on data from three regions to predict oil reserve volumes. Bootstrapping with 1000 samples was used to estimate profit distributions and risk of losses. The top 200 wells from 500 exploration points were selected for development based on predicted reserves.</li>
+                    <li>Results: One region emerged as the optimal choice and the lowest risk of loss. While another region showed higher mean profit, it had a higher risk of loss. The analysis balanced potential returns against business constraints including the development budget and the requirement to keep risk below a specific threshold.</li>
+                </ul>
+            </li>    
+            
+            <li>
+               <strong>Beta Bank - Customer Attrition Analysis</strong>
+                <ul>
+                    <li>Goal and Challenges: Determine which customers are most likely to exit next, so the client can focus on keeping them. Attrition was extremely low, so predicting who was next was hard.</li>
+                    <li>Methods: Data sampling methods (upscaling, downscaling, class weight balancing) and parameter optimization were applied to three models and compared to predict attrition.</li>
+                    <li>Results: Downsampling was the most effective sampling method for improving model score. Random Forest was the most accurate model by all metrics (Accuracy, Precision, Recall, F1, ROC-AUC, PR-AUC).</li>
+                </ul>
+            </li>    
+            <li>
+                <strong>Megaline - Revenue Analysis</strong>
+                <ul>
+                    <li>Goal and Challenges: Determine which of the prepaid phone plans brings in more revenue in order to adjust the advertising budget. The data was highly fragmented and a sampling was required due to the large data size.</li>
+                    <li>Methods: Hypothesis testing was used to determine differences between plans and customer characteristics. Data management techniques related to data joining and grouping. Aggregation functions were used to analyze revenue by both year and month.
+</li>
+                    <li>Results: 66% of users were on Surf (the cheaper plan). General usage behavior between plans (number of calls, call duration, number of messages, number of internet sessions, and overall data usage) across years and months were not statistically different.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Instacart - Customer Behavior Analysis</strong>
+                <ul>
+                    <li>
+                        Goal and Challenges: Understand customer behavior. Conclusions could contribute to driving
+                        operational efficiency, marketing, and revenue forecasting decisions. To achieve the goal,
+                        dataframes needed to be linked appropriately in order to conduct proper analysis. Some
+                        columns had incorrect data types (e.g., order IDs as floats instead of integers) and certain
+                        columns had missing values that needed to be handled appropriately, like subscription end
+                        date. </li>
+                    <li>Methods: Handled nonstandard formatting, verified and corrected values and data
+                        types, identified missing values and filled them using appropriate strategies (e.g., drop, mean,
+                        max, min, etc.). Removed duplicates. Created histograms, box plots, and bar plots to visualize
+                        the data. Used group and aggregation functions to explore additional data distributions.</li>
+                    <li>Results: Shoppers tended to buy between 10am - 4pm at the beginning of the
+                        week. About half of shoppers submitted orders once every 2 weeks, and the other half once every
+                        month or longer, on average. The average customer ordered 3-10 products per order and placed
+                        between 1 and 5 orders during the dataset time frame. The most common items purchased were a
+                        wide variety of produce (bananas, avocados, etc.) and milk. Reorders (48% of all orders) were
+                        typically of the same perishable produce and milk.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Megaline - Plan Recommendation Model</strong>
+                <ul>
+                    <li>Goal and Challenges: Develop a model to recommend one of Megaline’s newer plans (Smart or Ultra)
+                        based on
+                        subscriber behavior. Achieve an accuracy threshold of at least 75%. Account for imbalanced data
+                        in model fitting and model evaluation.</li>
+                    <li>Methods: Used behavior data from subscribers who had already switched to new plans. Training
+                        data, accounting for imbalance, was used to train the model. The model was evaluated against a
+                        naive baseline (dummy classifier) that predicted according to the target’s proportions,
+                        establishing a meaningful benchmark.</li>
+                    <li>Results: The final model achieved 81% accuracy on the test set, outperforming the baseline model
+                        (69%) by 12%. This exceeded the required 5% outperformance threshold by over 2x, demonstrating
+                        the model’s value.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Ice - Sales Analysis</strong>
+                <ul>
+                    <li>Goal and Challenges: Identify patterns that determine whether a video game succeeds, using user
+                        and expert reviews, genres, platforms, and historical sales data. Use insights to spot potential
+                        big winners and plan advertising campaigns for 2017. Challenges included working with incomplete
+                        data (missing price and units sold) and accounting for differences across platforms, genres, and
+                        regions.</li>
+                    <li>Methods: Analyzed data from open sources covering game releases, sales, reviews, genres, and
+                        platforms up to December 2016. Explored trends in game releases, sales peaks, platform life
+                        cycles, and regional performance. Examined correlations between critic/user scores and sales,
+                        and compared sales distributions across platforms and genres. Investigated regional differences
+                        in sales, genre popularity, and ratings.</li>
+                    <li>Results: Peak game releases and sales occurred in 2008; peak mean sales per game was in 1989.
+                        New platforms drive new sales, but all platforms decline over time, with a typical sales cycle
+                        of about 10 years. Top platforms by sales: PS3, X360, Wii. Year-over-year growth is strongest in
+                        the first year of a platform and declines thereafter. Sales distributions by platform are not
+                        always normal. Critic and user scores are correlated, and higher ratings are associated with
+                        higher sales. Action is the top-selling genre, but sales across all genres are declining. North
+                        America and Europe are the largest markets and perform similarly; Japan and other regions have
+                        lower but similar sales. Genre sales and ratings vary by region. Average user ratings differ
+                        between Xbox and PC, but not between Action and Sports genres. Analysis could be improved with
+                        access to price and units sold data.</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section id="experience" class="section experience">
+        <h2>Experience</h2>
+        <ul>
+            <li>
+                <strong>Zin Global, Inc.</strong> (Chicago, USA) - Co-founder (2022 - 2024)
+                <ul>
+                    <li>Product Management: Drafted business and functional requirements, hired/managing developers,
+                        tested product.</li>
+                    <li>Sales/Marketing: Promoted Zin online, held investor calls, logged interest, managed social
+                        media.</li>
+                    <li>Admin: Formed the company, handled contracts, and wound down the company.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Burg Translations, Inc.</strong> (Chicago, USA) - CEO (2016 - 2022)
+                <ul>
+                    <li>Introduced new high-margin services and transitioned to a new CEO.</li>
+                    <li>Relocated the office to reduce costs and moved servers to the cloud for enhanced cybersecurity.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <strong>Burg Translations, Inc.</strong> (Chicago, USA) - Manager (2012 - 2016)
+                <ul>
+                    <li>Digital transformation: Made the company paperless, led the transition to a new project
+                        management platform, integrated platforms for centralized data analysis, created dashboards for
+                        performance optimization, financial management, and production forecasting.</li>
+                    <li>Change management: Reorganized the company to be structured like a consulting firm, introduced
+                        digital marketing.</li>
+                    <li>General management: Internal ISO 9001:2008 Lead Auditor, handled all small business admin,
+                        including all sales and vendor contracts.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Datamonitor</strong> (London, UK) - Management Consulting (2011 - 2012)
+                <ul>
+                    <li>Built commercial valuation models of pharmaceutical therapies.</li>
+                    <li>Introduced automations for market tracking projects and report delivery.</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section id="education" class="section education">
+        <h2>Education</h2>
+        <ul>
+            <li>
+                <strong>King’s College London</strong> (London, UK) - PhD in Quantitative Methods in Medical Research
+                (2007 - 2010)
+                <ul>
+                    <li>Thesis: Quantitative Methods for handling missing data in quality of life measures.</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Purdue University</strong> (Indiana, USA) - BSc in Management: Finance, International Business &
+                Economics
+            </li>
+        </ul>
+    </section>
+
+
+    <footer class="contact">
+        <h2>Contact Me</h2>
+        <p>Email: <a href="mailto:apassala@gmail.com">apassala@gmail.com</a></p>
+        <p>Phone: +1 312 731 7216</p>
+    </footer>
+</body>
+
+</html>
