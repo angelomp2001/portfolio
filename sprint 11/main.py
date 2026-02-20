@@ -89,6 +89,7 @@ def main():
 
     # Objective 3: Predict Number of Benefits (Linear Regression)
     print("\n--- Objective 3: Predict Number of Benefits (Linear Regression) ---")
+    # we will predict the number of benefits using linear regression and also test the effect of scaling on the model.
     # See demo_scaling.py for full implementation details.
     # Returns regression splits for reuse in Objective 4, plus the baseline unscaled RMSE.
     X_train_reg, X_test_reg, y_train_reg, y_test_reg, rmse_unscaled, r2_unscaled = run_scaling_demo(
@@ -97,6 +98,7 @@ def main():
     
     # Objective 4: Protect Client Data (Obfuscation Proof)
     print("\n--- Objective 4: Protect Client Data (Obfuscation Proof) ---")
+    # we will demonstrate how obfuscation can be used to protect client data while preserving model accuracy.
     # See demo_obfuscation.py for full implementation details.
     # Reuses the regression splits and baseline RMSE/R2 from Objective 3.
     run_obfuscation_demo(X_train_reg, X_test_reg, y_train_reg, y_test_reg, rmse_unscaled, r2_unscaled)
