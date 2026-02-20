@@ -9,6 +9,7 @@ Updated after each successful merge per the branching workflow in `docs/agent_re
 
 **Branch:** `experiments/EXP-001-Organize-Project-Structure`  
 **Date:** 2026-02-20  
+**Merged:** 2026-02-20  
 **Status:** ✅ Success (organizational — no model changes)
 
 ### Code Changes
