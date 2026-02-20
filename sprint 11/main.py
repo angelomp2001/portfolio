@@ -4,6 +4,8 @@ Marketing needs to predict who's likely to be a custom, receive benefits, how ma
 
 import argparse
 from src.data_preprocessing import *
+from demo_scaling import run_scaling_demo
+from demo_obfuscation import run_obfuscation_demo
 
 def main():
     parser = argparse.ArgumentParser(description="Insurance Solutions Analysis")
@@ -87,79 +89,17 @@ def main():
 
     # Objective 3: Predict Number of Benefits (Linear Regression)
     print("\n--- Objective 3: Predict Number of Benefits (Linear Regression) ---")
-    
-    # We need to predict the exact *number* of benefits (0, 1, 2...), which is a Regression task.
-    # The previous split used the BINARY target. We need to split again using the CONTINUOUS target.
-    # By using the SAME random_state, we ensure the rows in Train/Test are identical to the Classification task.
-    X_train_reg, X_test_reg, y_train_reg, y_test_reg, X_train_scaled_reg, X_test_scaled_reg = data_preprocessor(
-        df, features, target='insurance_benefits', test_size=0.3, random_state=split_random_state
+    # See demo_scaling.py for full implementation details.
+    # Returns regression splits for reuse in Objective 4, plus the baseline unscaled RMSE.
+    X_train_reg, X_test_reg, y_train_reg, y_test_reg, rmse_unscaled, r2_unscaled = run_scaling_demo(
+        df, features, split_random_state
     )
-    
-    # Initialize custom Linear Regression model
-    lr = MyLinearRegression()
-
-    # Note: For Linear Regression, scaling has NO effect on the predictions (RMSE/R2), 
-    # because the weights adjust inversely to the scale. The results should be identical:
-    
-    # Unscaled features
-    lr.fit(X_train_reg, y_train_reg)
-    weights_unscaled = lr.weights
-    y_test_pred = lr.predict(X_test_reg)
-    # We silence the print inside eval_regressor so we can capture metrics for our table
-    rmse_unscaled, r2_unscaled = eval_regressor(y_test_reg, y_test_pred, print_metrics=False)
-
-    # Scaled features
-    lr.fit(X_train_scaled_reg, y_train_reg)
-    weights_scaled = lr.weights
-    y_test_pred_scaled = lr.predict(X_test_scaled_reg)
-    rmse_scaled, r2_scaled = eval_regressor(y_test_reg, y_test_pred_scaled, print_metrics=False)
-
-    # Print Comparison Table
-    print(f"{'Metric':<10} {'Unscaled':<10} {'Scaled':<10}")
-    print("-" * 32)
-    print(f"{'RMSE':<10} {rmse_unscaled:<10.2f} {rmse_scaled:<10.2f}")
-    print(f"{'R2':<10} {r2_unscaled:<10.2f} {r2_scaled:<10.2f}")
-    print("-" * 32)
-    print("Conclusion: Weights change, but predictions (RMSE/R2) remain identical.")
-    print("Note on Performance: The R2 score is low (~0.43), indicating Linear Regression is")
-    print("not the best model for this data. However, the objective was to prove scaling.")
     
     # Objective 4: Protect Client Data (Obfuscation Proof)
     print("\n--- Objective 4: Protect Client Data (Obfuscation Proof) ---")
-    # Why? We want to prove that we can mask the data (multiply X by a random matrix P)
-    # and STILL train a valid model without ever exposing the original PII to the model directly.
-    
-    # Generate obfuscation matrix P and transform data
-    # We use the Regression Data (X_train_reg, etc.) for this proof.
-    
-    # Generate P (Random Invertible Matrix)
-    rng = np.random.default_rng(seed=42)
-    P = rng.random(size=(X_train_reg.shape[1], X_train_reg.shape[1]))
-    while np.linalg.det(P) == 0:
-        P = rng.random(size=(X_train_reg.shape[1], X_train_reg.shape[1]))
-
-    # Transform (Obfuscate) the Training and Test Data
-    # X' = X @ P
-    X_obfuscated_train = X_train_reg @ P
-    X_obfuscated_test = X_test_reg @ P
-
-    # Train on Obfuscated Data
-    lr.fit(X_obfuscated_train, y_train_reg)
-    weights_obfuscated = lr.weights
-    y_test_pred_obfuscated = lr.predict(X_obfuscated_test)
-    
-    # Eval
-    rmse_obf, r2_obf = eval_regressor(y_test_reg, y_test_pred_obfuscated, print_metrics=False)
-
-    # Print Comparison Table
-    print(f"{'Metric':<10} {'Original':<10} {'Obfuscated':<10}")
-    print("-" * 34)
-    print(f"{'RMSE':<10} {rmse_unscaled:<10.2f} {rmse_obf:<10.2f}")
-    print(f"{'R2':<10} {r2_unscaled:<10.2f} {r2_obf:<10.2f}")
-    print("-" * 34)
-
-    print("Technical Conclusion: RMSE and R2 scores match between Original and Obfuscated data.")
-    print("This proves that Linear Regression can work on encrypted/obfuscated data without loss of accuracy.")
+    # See demo_obfuscation.py for full implementation details.
+    # Reuses the regression splits and baseline RMSE/R2 from Objective 3.
+    run_obfuscation_demo(X_train_reg, X_test_reg, y_train_reg, y_test_reg, rmse_unscaled, r2_unscaled)
 
 if __name__ == "__main__":
     main()
