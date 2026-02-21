@@ -8,13 +8,13 @@ A client wants to offer customers an automated estimate of what their car could 
 This project trains and evaluates several regression models on a dataset of ~354,000 car listings. The best model is selected based on RMSE and training/prediction time.
 
 ### Models Evaluated
-| Model | RMSE | Train Time (s) | Pred Time (s) |
-|---|---|---|---|
-| LinearRegression | 2724.06 | 0.26 | 0.025 |
-| LGBMRegressor | 2063.19 | 2.22 | 0.041 |
-| RandomForestRegressor | 2176.82 | 1.59 | 0.040 |
-| CatBoostRegressor | 2026.19 | 1.09 | 0.002 |
-| XGBRegressor | 2236.42 | 14.43 | 0.003 |
+| Model                 | RMSE    | Train Time (s) | Pred Time (s) |
+|-----------------------|---------|----------------|---------------|
+| LinearRegression      | 2724.06 | 0.26           | 0.025         |
+| LGBMRegressor         | 2063.19 | 2.22           | 0.041         |
+| RandomForestRegressor | 2176.82 | 1.59           | 0.040         |
+| CatBoostRegressor     | 2026.19 | 1.09           | 0.002         |
+| XGBRegressor          | 2236.42 | 14.43          | 0.003         |
 
 **Winner: CatBoostRegressor** — lowest RMSE (2026.19), second-fastest to train, fastest to predict.  
 After hyperparameter tuning (`max_depth=4`), RMSE dropped to **2008.14**.
