@@ -65,3 +65,40 @@ No model results changed — this was a structural/readability sprint.
 **Test RMSE:** 2,232.51  
 
 ---
+
+## EXP-013 — Selectable Performance Metric ✅
+
+**Branch:** `experiments/EXP-013-Selectable-Performance-Metric`  
+**Date:** 2026-02-21  
+**Merged:** 2026-02-21  
+**Status:** ✅ Success
+
+### Code Changes
+
+**`src/model_training.py`:**
+- Added `mean_absolute_error`, `r2_score` imports from `sklearn.metrics`
+- Replaced hardcoded RMSE logic with a `METRIC` module-level variable (fallback default `'rmse'`) and a `_metric_info()` helper that returns `(lower_is_better, label, score_fn)` fresh at each call — so whatever `main.py` sets at runtime is always picked up
+- Removed eagerly-computed `_LOWER_IS_BETTER` / `_METRIC_LABEL` constants and `_compute_score()` function
+- `train_candidates`, `tune_model`, `evaluate_model`, `print_summary` all call `_metric_info()` at entry — no hardcoded "RMSE" strings remain in the module
+- Results dict key renamed `'rmse'` → `'score'`; `evaluate_model` return renamed `rmse` → `score`
+- Best-model selection uses `min()` or `max()` depending on direction returned by `_metric_info()`
+- All chart titles, axis labels, convergence chart annotations, and print statements use `label` from `_metric_info()` dynamically
+
+**`main.py`:**
+- Added `import src.model_training as model_training` to allow runtime propagation
+- Added `METRIC` to Config block with option comments:
+  ```python
+  # Options: 'rmse' – Root Mean Squared Error      (lower is better)
+  #          'mse'  – Mean Squared Error            (lower is better)
+  #          'mae'  – Mean Absolute Error           (lower is better)
+  #          'r2'   – R² coefficient of determination (higher is better)
+  METRIC = 'rmse'
+  model_training.METRIC = METRIC   # propagate choice to training module
+  ```
+- `test_rmse` variable renamed `test_score` throughout
+
+### Results
+
+No model results changed — this was a pipeline flexibility experiment (infrastructure only). Default metric remains `'rmse'` so outputs are identical to EXP-002. Changing to `'mae'` or `'r2'` now requires editing exactly one line in `main.py`.
+
+---
