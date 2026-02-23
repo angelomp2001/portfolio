@@ -1,5 +1,8 @@
+import os
+import json
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -22,6 +25,56 @@ TRAIN_RATIO, VALID_RATIO, TEST_RATIO = 0.6, 0.2, 0.2
 COLS_TO_DROP    = ['DateCrawled', 'RegistrationMonth', 'DateCreated',
                    'NumberOfPictures', 'PostalCode', 'LastSeen']
 CATEGORICAL_COLS = ['VehicleType', 'Gearbox', 'Model', 'FuelType', 'Brand', 'NotRepaired']
+
+
+# ── Save data statistics (for drift tracking) ────────────────────────────────
+def save_data_stats(df, path, label="data"):
+    """
+    Compute and save descriptive statistics for a DataFrame to a JSON file.
+    Call on both raw and clean data to enable data drift tracking across runs.
+
+    Parameters
+    ----------
+    df    : pd.DataFrame
+    path  : str  — output file path (e.g. 'data/stats_raw.json')
+    label : str  — human-readable tag written into the file (e.g. 'raw', 'clean')
+    """
+    stats = {
+        "label":     label,
+        "timestamp": datetime.now().isoformat(),
+        "shape":     {"rows": int(df.shape[0]), "cols": int(df.shape[1])},
+        "columns":   {},
+    }
+
+    for col in df.columns:
+        col_stats = {
+            "dtype":        str(df[col].dtype),
+            "null_count":   int(df[col].isna().sum()),
+            "null_pct":     round(float(df[col].isna().mean()) * 100, 4),
+            "unique_count": int(df[col].nunique()),
+        }
+        if pd.api.types.is_numeric_dtype(df[col]):
+            col_stats.update({
+                "mean": round(float(df[col].mean()),              4),
+                "std":  round(float(df[col].std()),               4),
+                "min":  round(float(df[col].min()),               4),
+                "p25":  round(float(df[col].quantile(0.25)),      4),
+                "p50":  round(float(df[col].quantile(0.50)),      4),
+                "p75":  round(float(df[col].quantile(0.75)),      4),
+                "max":  round(float(df[col].max()),               4),
+            })
+        else:
+            top = df[col].mode()
+            col_stats["top_value"] = str(top.iloc[0]) if not top.empty else None
+
+        stats["columns"][col] = col_stats
+
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(stats, f, indent=2)
+
+    print(f"[stats] Saved {label} statistics → {path}  "
+          f"({df.shape[0]:,} rows × {df.shape[1]} cols)")
 
 
 # ── Load ──────────────────────────────────────────────────────────────────────

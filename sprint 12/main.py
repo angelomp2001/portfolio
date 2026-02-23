@@ -11,7 +11,7 @@ import xgboost as xgb
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 
-from src.data_preprocessing import load_data, preprocess_data
+from src.data_preprocessing import load_data, preprocess_data, save_data_stats
 from src.model_training import train_candidates, tune_model, evaluate_model, print_summary
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -25,6 +25,9 @@ df = load_data(DATA_PATH)
 df = df.sample(SAMPLE_SIZE, random_state=RANDOM_STATE)
 print(f"Loaded data — shape: {df.shape}")
 print(f"Columns: {df.columns.tolist()}\n")
+
+# ── Save raw data stats ───────────────────────────────────────────────────────
+save_data_stats(df, 'data/stats_raw.json', label='raw')
 
 # ── Preprocess ────────────────────────────────────────────────────────────────
 # preprocess_data handles every step needed before a model can be trained:
@@ -42,6 +45,9 @@ print(f"Columns: {df.columns.tolist()}\n")
 #
 # Returns a nested dict so callers can pick exactly what they need by name.
 data = preprocess_data(df)
+
+# ── Save clean data stats ────────────────────────────────────────────────────
+save_data_stats(data['df'], 'data/stats_clean.json', label='clean')
 
 # Unpack regression (OHE) and ML (label-encoded) splits for clarity below.
 reg = data['regression']

@@ -1,0 +1,104 @@
+{
+  "label": "clean",
+  "timestamp": "2026-02-22T23:29:06.614878",
+  "shape": {
+    "rows": 5358,
+    "cols": 10
+  },
+  "columns": {
+    "Price": {
+      "dtype": "float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 755,
+      "mean": 6301.9459,
+      "std": 4942.4849,
+      "min": 500.0,
+      "p25": 2200.0,
+      "p50": 4850.0,
+      "p75": 9400.0,
+      "max": 20000.0
+    },
+    "VehicleType": {
+      "dtype": "object",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 9,
+      "top_value": "sedan"
+    },
+    "RegistrationYear": {
+      "dtype": "float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 52,
+      "mean": 2003.6885,
+      "std": 28.1334,
+      "min": 0.0,
+      "p25": 2000.0,
+      "p50": 2004.0,
+      "p75": 2008.0,
+      "max": 2019.0
+    },
+    "Gearbox": {
+      "dtype": "object",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 3,
+      "top_value": "manual"
+    },
+    "Power": {
+      "dtype": "float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 180,
+      "mean": 148.1293,
+      "std": 45.4527,
+      "min": 100.0,
+      "p25": 116.0,
+      "p50": 140.0,
+      "p75": 170.0,
+      "max": 400.0
+    },
+    "Model": {
+      "dtype": "object",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 193,
+      "top_value": "3er"
+    },
+    "Mileage": {
+      "dtype": "int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 13,
+      "mean": 131052.6316,
+      "std": 34647.1134,
+      "min": 5000.0,
+      "p25": 125000.0,
+      "p50": 150000.0,
+      "p75": 150000.0,
+      "max": 150000.0
+    },
+    "FuelType": {
+      "dtype": "object",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 7,
+      "top_value": "petrol"
+    },
+    "Brand": {
+      "dtype": "object",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 38,
+      "top_value": "volkswagen"
+    },
+    "NotRepaired": {
+      "dtype": "object",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "unique_count": 3,
+      "top_value": "no"
+    }
+  }
+}
