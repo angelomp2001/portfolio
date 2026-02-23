@@ -20,9 +20,6 @@ from src import charts
 tf.get_logger().setLevel('ERROR')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# ── Config ────────────────────────────────────────────────────────────────────
-RANDOM_STATE = 12345
-N_FOLDS      = 5        # k for KFold CV ✅
 
 # ── Silence helpers ───────────────────────────────────────────────────────────
 _SILENCE = {
@@ -163,13 +160,13 @@ class KerasRegressorWrapper:
 
 
 # ── 1. Train & compare all candidates via 5-fold CV ──────────────────────────
-def train_candidates(pipelines, X_train, y_train):
+def train_candidates(pipelines, X_train, y_train, k_folds=5, random_state=12345):
     """
-    Evaluate each pipeline with KFold(k=5) CV. ✅
+    Evaluate each pipeline with KFold(k_folds) CV. ✅
     Tracks train time and peak memory per model. ✅
     Returns (results dict, best_name).
     """
-    kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_STATE)
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=random_state)
 
     # ── Live comparison chart ─────────────────────────────────────────────────
     plt.ion()
@@ -288,7 +285,7 @@ def plot_fold_scores(results):
     axes_flat = np.array(axes).flatten()
 
     for ax, (name, r) in zip(axes_flat, results.items()):
-        folds = list(range(1, N_FOLDS + 1))
+        folds = list(range(1, len(r["fold_scores"]) + 1))
         ax.plot(folds, r["fold_scores"], "o-",
                 color=charts.COLORS[0], linewidth=2, markersize=6)
         ax.axhline(r["score"], color=charts.COLORS[1],
@@ -323,7 +320,7 @@ def plot_keras_history(history, name="KerasNN"):
 
 # ── 2. Tune the best model via random search with a live convergence chart ────
 def tune_model(pipeline, model_name, X_train, y_train,
-               n_iter=20, random_state=RANDOM_STATE):
+               n_iter=20, random_state=12345):
     """
     Random hyperparameter search over PARAM_GRIDS[model_name].
     Uses a fixed 80/20 validation split of training data for speed.
