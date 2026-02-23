@@ -1,70 +1,43 @@
-# Branch Edit Summary — EXP-002-Refactor-Model-Training-Pipeline
+# Branch Edit Summary — EXP-003-Add-Data-Drift-Tracking
 
 ## Summary
-Complete refactor of the model training pipeline for transparency, automation, and a cleaner UX. The monolithic `model_training()` function was replaced with four focused, reusable helpers. The model list, tuning step, and test evaluation are now all explicit, separate lines in `main.py`. Hyperparameter search no longer hard-codes best values — it discovers them automatically via random search. Terminal streaming numbers were replaced with live-updating matplotlib charts.
+Added a `save_data_stats()` function to capture descriptive statistics from both the raw and clean DataFrames on every run. Stats are written to JSON files in `data/` and serve as a baseline for data drift tracking over time. Also added `docs/template.md` and `docs/checklist.md` as project documentation scaffolding.
 
 ---
 
 ## Files Modified
 
-### `src/model_training.py`
-**Completely rewritten.** The old `model_training()` monolith was removed and replaced with four focused functions:
-
-- **`train_candidates(candidates)`**
-  - Accepts a dict of `{name: {model, X_train, y_train, X_valid, y_valid}}` — models no longer hard-coded inside the function
-  - Returns `(results_dict, best_name)` — best model is discovered at runtime, not hard-coded
-  - Displays a **live horizontal bar chart** (dark theme) that grows as each model finishes; winner highlighted in gold
-
-- **`tune_model(model, X_train, y_train, X_valid, y_valid, n_iter, random_state)`**
-  - Runs a **manual random search** over `PARAM_GRIDS[model_class_name]`
-  - Displays a **live convergence chart** (scatter + best-so-far line) updating every iteration
-  - Automatically skips models with no entry or empty grid (e.g. `LinearRegression`)
-  - Re-fits the winning configuration on the full training set before returning
-  - Returns `(best_model, best_params)` — params are discovered, not hard-coded
-
-- **`evaluate_model(model, X_test, y_test)`**
-  - Single-responsibility: applies a fitted model to the held-out test split
-  - Returns `(rmse, pred_time)`
-
-- **`print_summary(results, best_name, best_params, test_rmse, test_pred_time)`**
-  - Prints the comparison table with `← best` marker on the dynamically detected winner
-  - Prints discovered best hyperparameters and final test RMSE — nothing hard-coded
-
-**New module-level additions:**
-- `_SILENCE` dict: per-library verbose/verbosity suppression kwargs
-- `_devnull()` context manager: redirects `sys.stdout`/`sys.stderr` to `/dev/null` around every `fit()`/`predict()` call, eliminating streaming console noise
-- `PARAM_GRIDS` dict: hyperparameter search spaces for each model class (centralised, not buried in loops)
-- Dark-theme chart helpers (`_BG`, `_PANEL`, `_TEXT`, `_MUTED`, `_BORDER`, `_COLORS`, `_style_axes()`)
-- `matplotlib.use("TkAgg")` for interactive chart rendering
+### `src/data_preprocessing.py`
+- **Added imports:** `os`, `json`, `datetime`
+- **Added `save_data_stats(df, path, label)`:**
+  - Computes per-column stats: `dtype`, `null_count`, `null_pct`, `unique_count`
+  - Numeric columns: additionally computes `mean`, `std`, `min`, `p25`, `p50`, `p75`, `max`
+  - Categorical columns: additionally captures `top_value` (most frequent)
+  - Writes a timestamped JSON file to `path` (creates parent dirs if needed)
+  - Justified: enables run-to-run comparison to detect data drift before training
 
 ### `main.py`
-**Completely rewritten for top-level transparency.**
+- **Added import:** `save_data_stats` from `src.data_preprocessing`
+- **Added call after load/sample:** `save_data_stats(df, 'data/stats_raw.json', label='raw')`
+  - Justified: captures distribution of input data before any cleaning
+- **Added call after preprocess:** `save_data_stats(data['df'], 'data/stats_clean.json', label='clean')`
+  - Justified: captures distribution after cleaning to compare with raw and prior runs
 
-- **Added imports:** `matplotlib.pyplot`, all five model classes (`LinearRegression`, `LGBMRegressor`, `RandomForestRegressor`, `CatBoostRegressor`, `XGBRegressor`), and the four new helpers from `model_training`
-- **Added config constant:** `N_ITER_TUNE = 20` (random search iterations)
-- **Added `candidates` dict:** explicit definition of all five models with their correct data splits (OHE for LinearRegression, label-encoded for tree models) — model list is now visible in `main.py`
-- **Separated pipeline into four explicit lines:**
-  ```python
-  results, best_name = train_candidates(candidates)
-  best_model, best_params = tune_model(...)
-  test_rmse, test_pred_time = evaluate_model(best_model, ...)
-  print_summary(results, best_name, best_params, test_rmse, test_pred_time)
-  ```
-- **Added at end:** `input("Press Enter to close charts…")` + `plt.close("all")` keeps all chart windows open after script completes
+## Files Added
 
-### `README.md`
-- Updated "Best model" line to note that the winner is now auto-detected
-- Updated "How to Run" to mention the live charts and Enter-to-exit prompt
+### `docs/template.md`
+- New project README template pre-filled with this project's business case, folder structure, pipeline overview, and API overview sections.
+
+### `docs/checklist.md`
+- New project checklist tracking which ML best-practice items are implemented (✅) vs outstanding ([ ]).
 
 ---
 
-## What Was Removed / Fixed
-| Before | After |
+## What Was Added
+| Item | Purpose |
 |---|---|
-| `model_training()` monolith — model list hidden inside function | Model list defined in `main.py` as `candidates` dict |
-| `n_estimators=87, max_depth=4` hard-coded | Discovered by random search at runtime |
-| `← best` hard-coded on CatBoost row | Applied to whichever model wins by lowest RMSE |
-| 50+ lines of streaming numbers during hyperparameter search | Live convergence chart |
-| Each model's training printed line-by-line | Live bar chart that grows model by model |
-| LightGBM/CatBoost/XGBoost printing their own verbose logs | Silenced via `_SILENCE` dict + `_devnull()` context |
-| Test data evaluated only on CatBoost, hard-coded | Evaluated on whichever model wins, using its correct data split |
+| `save_data_stats()` | Captures per-column statistics for drift tracking |
+| `data/stats_raw.json` (generated) | Snapshot of raw data distribution each run |
+| `data/stats_clean.json` (generated) | Snapshot of clean data distribution each run |
+| `docs/template.md` | Reusable README template for this project |
+| `docs/checklist.md` | ML best-practices checklist with completion status |
