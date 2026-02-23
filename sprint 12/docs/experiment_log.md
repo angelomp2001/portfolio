@@ -136,3 +136,50 @@ No model results changed — infrastructure/tooling experiment only.
 **Test RMSE (unchanged):** 2,232.51
 
 ---
+
+## EXP-004 — Complete Checklist ✅
+
+**Branch:** `experiments/EXP-004-Complete-Checklist`  
+**Date:** 2026-02-22  
+**Merged:** 2026-02-23  
+**Status:** ✅ Success
+
+### Code Changes
+
+**`src/charts.py` (new):**
+- Shared dark-theme constants and helpers (`style_axes`, `new_figure`) imported by both modules
+
+**`src/data_preprocessing.py` (rewrite):**
+- Explicit column-role constants: `TARGET_COL`, `NUMERIC_COLS`, `CATEGORICAL_COLS`
+- `clean_data(df)` — cleaning only; encoding/scaling moved into Pipelines
+- `split_data(df)` — 80/20 holdout split
+- `build_preprocessor(cat_cols, num_cols, is_tree)` — ColumnTransformer; non-tree: OHE + PolynomialFeatures(2) on numeric; tree: OrdinalEncoder + passthrough
+- `visualize_data(df, label, out_path)` — histograms + bar charts, reused for raw and clean
+
+**`src/model_training.py` (rewrite):**
+- `build_keras_model()` — Dense(128→64→32→1) with Dropout, Adam, MSE loss
+- `KerasRegressorWrapper` — sklearn-compatible; EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+- `train_candidates()` — KFold(k=5) CV; tracks train time + peak memory via tracemalloc; live bar chart ±std
+- `plot_fold_scores()` — per-model fold-score line chart (x=fold)
+- `plot_keras_history()` — epoch vs train/val loss
+- `evaluate_model()` — RMSE, MSE, MAE, R², pred_time
+- `save_best_model()` — joblib for sklearn, .keras for NN; writes metadata JSON
+
+**`main.py` (rewrite):**
+- Visualize raw + clean data; build preprocessors; 6 pipelines; 5-fold CV → tune → evaluate → save
+
+### Results
+
+**Best model:** CatBoostRegressor  
+**Best params:** `n_estimators=140  max_depth=7  learning_rate=0.1`
+
+| Metric | Value |
+|--------|-------|
+| RMSE   | 2,195.02 |
+| MSE    | 4,818,120.58 |
+| MAE    | 1,562.50 |
+| R²     | 0.7998 |
+
+vs EXP-002 baseline RMSE 2,232.51 — improved by ~37 points.
+
+---
