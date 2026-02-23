@@ -10,122 +10,115 @@ import catboost as cb
 import xgboost as xgb
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.pipeline import Pipeline
 
-from src.data_preprocessing import load_data, preprocess_data, save_data_stats
-from src.model_training import train_candidates, tune_model, evaluate_model, print_summary
+from src.data_preprocessing import (
+    load_data, clean_data, split_data, build_preprocessor,
+    save_data_stats, visualize_data,
+    CATEGORICAL_COLS, NUMERIC_COLS,
+)
+from src.model_training import (
+    KerasRegressorWrapper, build_keras_model,
+    train_candidates, tune_model, evaluate_model,
+    save_best_model, print_summary, plot_keras_history,
+)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 DATA_PATH    = 'data/car_data.csv'
-SAMPLE_SIZE  = 10_000   # Full dataset is ~350k rows; a sample keeps development fast.
-RANDOM_STATE = 12345    # Fixed seed ensures reproducible splits across runs.
-N_ITER_TUNE  = 20       # Number of random parameter combos to try during tuning.
+SAMPLE_SIZE  = 10_000
+RANDOM_STATE = 12345
+N_ITER_TUNE  = 20
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-df = load_data(DATA_PATH)
-df = df.sample(SAMPLE_SIZE, random_state=RANDOM_STATE)
-print(f"Loaded data — shape: {df.shape}")
-print(f"Columns: {df.columns.tolist()}\n")
+df_raw = load_data(DATA_PATH)
+df_raw = df_raw.sample(SAMPLE_SIZE, random_state=RANDOM_STATE)
+print(f"Loaded data — shape: {df_raw.shape}\n")
 
-# ── Save raw data stats ───────────────────────────────────────────────────────
-save_data_stats(df, 'data/stats_raw.json', label='raw')
+# ── Raw data: stats + visualizations ─────────────────────────────────────────
+save_data_stats(df_raw, 'data/stats_raw.json',   label='raw')
+visualize_data(df_raw,  label='Raw',  out_path='data/viz_raw.png')
 
-# ── Preprocess ────────────────────────────────────────────────────────────────
-# preprocess_data handles every step needed before a model can be trained:
-#   1. Drop columns that are irrelevant or would cause data leakage.
-#   2. Clean numeric columns by nullifying out-of-range values.
-#   3. Fill NaN in categorical columns with a literal 'missing' category so
-#      those rows aren't lost at the dropna step.
-#   4. Deduplicate and drop any remaining NaN rows.
-#   5. Split into train / validation / test sets (60 / 20 / 20).
-#   6. Encode categoricals two ways:
-#        - One-Hot Encoding  → for linear regression models (avoids ordinality).
-#        - Label Encoding    → for tree-based ML models (handles high cardinality better).
-#   7. Scale all features with StandardScaler so distance-sensitive models
-#      treat each feature equally (fit on train only to prevent data leakage).
-#
-# Returns a nested dict so callers can pick exactly what they need by name.
-data = preprocess_data(df)
+# ── Clean ─────────────────────────────────────────────────────────────────────
+df = clean_data(df_raw)
+print(f"After cleaning — shape: {df.shape}\n")
 
-# ── Save clean data stats ────────────────────────────────────────────────────
-save_data_stats(data['df'], 'data/stats_clean.json', label='clean')
+# ── Clean data: stats + visualizations ───────────────────────────────────────
+save_data_stats(df, 'data/stats_clean.json', label='clean')
+visualize_data(df,  label='Clean', out_path='data/viz_clean.png')
 
-# Unpack regression (OHE) and ML (label-encoded) splits for clarity below.
-reg = data['regression']
-ml  = data['ml']
+# ── Split: 80% train-pool / 20% final holdout test ───────────────────────────
+X_train, X_test, y_train, y_test = split_data(df)
+print(f"Train pool: {X_train.shape[0]:,} rows  |  Test: {X_test.shape[0]:,} rows\n")
 
-# ── Define candidate models ───────────────────────────────────────────────────
-# Each entry specifies the model and the exact data split it should train on.
-# LinearRegression uses OHE-encoded features; all tree models use label-encoded features.
-candidates = {
-    "LinearRegression": {
-        "model":   LinearRegression(),
-        "X_train": reg['scaled']['features']['train'],
-        "y_train": reg['scaled']['targets']['train'],
-        "X_valid": reg['scaled']['features']['valid'],
-        "y_valid": reg['scaled']['targets']['valid'],
-        "X_test":  reg['scaled']['features']['test'],
-        "y_test":  reg['scaled']['targets']['test'],
-    },
-    "LGBMRegressor": {
-        "model":   lgb.LGBMRegressor(verbose=-1),
-        "X_train": ml['scaled']['features']['train'],
-        "y_train": ml['scaled']['targets']['train'],
-        "X_valid": ml['scaled']['features']['valid'],
-        "y_valid": ml['scaled']['targets']['valid'],
-        "X_test":  ml['scaled']['features']['test'],
-        "y_test":  ml['scaled']['targets']['test'],
-    },
-    "RandomForestRegressor": {
-        "model":   RandomForestRegressor(),
-        "X_train": ml['scaled']['features']['train'],
-        "y_train": ml['scaled']['targets']['train'],
-        "X_valid": ml['scaled']['features']['valid'],
-        "y_valid": ml['scaled']['targets']['valid'],
-        "X_test":  ml['scaled']['features']['test'],
-        "y_test":  ml['scaled']['targets']['test'],
-    },
-    "CatBoostRegressor": {
-        "model":   cb.CatBoostRegressor(verbose=0),
-        "X_train": ml['scaled']['features']['train'],
-        "y_train": ml['scaled']['targets']['train'],
-        "X_valid": ml['scaled']['features']['valid'],
-        "y_valid": ml['scaled']['targets']['valid'],
-        "X_test":  ml['scaled']['features']['test'],
-        "y_test":  ml['scaled']['targets']['test'],
-    },
-    "XGBRegressor": {
-        "model":   xgb.XGBRegressor(),
-        "X_train": ml['scaled']['features']['train'],
-        "y_train": ml['scaled']['targets']['train'],
-        "X_valid": ml['scaled']['features']['valid'],
-        "y_valid": ml['scaled']['targets']['valid'],
-        "X_test":  ml['scaled']['features']['test'],
-        "y_test":  ml['scaled']['targets']['test'],
-    },
+# ── Build preprocessors ───────────────────────────────────────────────────────
+# Column lists inferred from the cleaned DataFrame (order matches build_preprocessor)
+cat_cols = [c for c in CATEGORICAL_COLS if c in X_train.columns]
+num_cols = [c for c in NUMERIC_COLS     if c in X_train.columns]
+
+prep_reg  = build_preprocessor(cat_cols, num_cols, is_tree=False)  # OHE + PolyFeat + Scale
+prep_tree = build_preprocessor(cat_cols, num_cols, is_tree=True)   # OrdinalEnc + passthrough
+
+# ── Build pipelines ───────────────────────────────────────────────────────────
+# Each pipeline = preprocessor + model.
+# Non-tree models get OHE + PolynomialFeatures(degree=2) on numeric cols. ✅
+# Tree models get OrdinalEncoding (no scaling needed).                     ✅
+# Keras NN uses the same non-tree preprocessor as LinearRegression.        ✅
+pipelines = {
+    "LinearRegression": Pipeline([
+        ("prep",  prep_reg),
+        ("model", LinearRegression()),
+    ]),
+    "KerasRegressorWrapper": Pipeline([
+        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=False)),
+        ("model", KerasRegressorWrapper(
+            build_fn=build_keras_model,
+            epochs=150, batch_size=64,
+            validation_split=0.1,
+            dropout_rate=0.3,
+            learning_rate=0.001,
+        )),
+    ]),
+    "LGBMRegressor": Pipeline([
+        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
+        ("model", lgb.LGBMRegressor(verbose=-1)),
+    ]),
+    "RandomForestRegressor": Pipeline([
+        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
+        ("model", RandomForestRegressor()),
+    ]),
+    "CatBoostRegressor": Pipeline([
+        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
+        ("model", cb.CatBoostRegressor(verbose=0)),
+    ]),
+    "XGBRegressor": Pipeline([
+        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
+        ("model", xgb.XGBRegressor()),
+    ]),
 }
 
-# ── Train & compare all candidates ───────────────────────────────────────────
-results, best_name = train_candidates(candidates)
+# ── 5-fold CV: train & compare all candidates ─────────────────────────────────
+results, best_name = train_candidates(pipelines, X_train, y_train)
 
-# ── Tune the best model (random search; skipped if no param grid exists) ─────
-best_model, best_params = tune_model(
-    results[best_name]["model"],
-    candidates[best_name]["X_train"], candidates[best_name]["y_train"],
-    candidates[best_name]["X_valid"], candidates[best_name]["y_valid"],
+# ── Tune the best model (random search with live chart) ───────────────────────
+best_pipeline, best_params = tune_model(
+    pipelines[best_name], best_name,
+    X_train, y_train,
     n_iter=N_ITER_TUNE, random_state=RANDOM_STATE,
 )
 
-# ── Evaluate tuned model on held-out test data ───────────────────────────────
-test_rmse, test_pred_time = evaluate_model(
-    best_model,
-    candidates[best_name]["X_test"],
-    candidates[best_name]["y_test"],
-)
+# ── Plot Keras training curve if winner is the NN ─────────────────────────────
+final_step = best_pipeline.steps[-1][1]
+if isinstance(final_step, KerasRegressorWrapper) and final_step.history_ is not None:
+    plot_keras_history(final_step.history_, name=best_name)
 
-# ── Summary ───────────────────────────────────────────────────────────────────
-print_summary(results, best_name, best_params, test_rmse, test_pred_time)
+# ── Save best model ───────────────────────────────────────────────────────────
+# Evaluate first so we have metrics for the metadata file
+test_metrics = evaluate_model(best_pipeline, X_test, y_test)
+save_best_model(best_pipeline, best_name, best_params, test_metrics)
+
+# ── Print summary ─────────────────────────────────────────────────────────────
+print_summary(results, best_name, best_params, test_metrics)
 
 # ── Keep all chart windows open ───────────────────────────────────────────────
-# plt.show(block=True) blocks here until the user manually closes every window.
 input("\nPress Enter to close charts and exit…")
 plt.close("all")

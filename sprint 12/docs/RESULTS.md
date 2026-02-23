@@ -1,16 +1,25 @@
-# RESULTS — EXP-003
+# RESULTS — EXP-004
 
-**Branch:** `experiments/EXP-003-Add-Data-Drift-Tracking`  
-**Goal:** Add data statistics capture for both raw and clean DataFrames on every run, enabling run-to-run comparison for data drift detection. Also add project documentation scaffolding.
+**Branch:** `experiments/EXP-004-Complete-Checklist`  
+**Goal:** Complete the project checklist: add Keras NN, 5-fold CV, sklearn Pipelines, PolynomialFeatures for non-tree models, data visualizations, multi-metric evaluation, peak memory tracking, and model saving.
 
 ## Changes Made
-- Added `save_data_stats(df, path, label)` to `src/data_preprocessing.py`
-- Called twice in `main.py`: once on raw sampled data, once on cleaned data output
-- Stats written to `data/stats_raw.json` and `data/stats_clean.json` each run
-- Added `docs/template.md` (project README template)
-- Added `docs/checklist.md` (ML best-practices checklist)
+- Added `src/charts.py` — shared dark-theme chart helpers (reused by both modules)
+- Rewrote `src/data_preprocessing.py` — `clean_data()`, `split_data()`, `build_preprocessor()` (Pipeline-ready), `visualize_data()`
+- Rewrote `src/model_training.py` — `KerasRegressorWrapper`, `build_keras_model()`, 5-fold CV in `train_candidates()`, `plot_fold_scores()`, `plot_keras_history()`, multi-metric `evaluate_model()`, `save_best_model()`
+- Rewrote `main.py` — new pipeline-based flow with visualizations and model saving
 
-## Model Results
-_No model changes made in this experiment — RMSE unchanged from EXP-002._
+## Model Results (5-fold CV → best model tuned → test evaluation)
 
-**Test RMSE (unchanged):** 2,232.51
+**Best model (auto-detected):** CatBoostRegressor  
+**Best hyperparameters:** `n_estimators=140  max_depth=7  learning_rate=0.1`  
+
+| Metric | Test Value |
+|--------|-----------|
+| RMSE   | 2,195.02  |
+| MSE    | 4,818,120.58 |
+| MAE    | 1,562.50  |
+| R²     | 0.7998    |
+| Pred time | 0.0048s |
+
+**Comparison to EXP-002 baseline (RMSE 2,232.51):** improved by ~37 points with the new CV + Pipeline architecture.
