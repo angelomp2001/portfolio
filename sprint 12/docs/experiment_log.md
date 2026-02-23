@@ -102,3 +102,37 @@ No model results changed — this was a structural/readability sprint.
 No model results changed — this was a pipeline flexibility experiment (infrastructure only). Default metric remains `'rmse'` so outputs are identical to EXP-002. Changing to `'mae'` or `'r2'` now requires editing exactly one line in `main.py`.
 
 ---
+
+## EXP-003 — Add Data Drift Tracking ✅
+
+**Branch:** `experiments/EXP-003-Add-Data-Drift-Tracking`  
+**Date:** 2026-02-22  
+**Merged:** 2026-02-22  
+**Status:** ✅ Success (infrastructure — no model changes)
+
+### Code Changes
+
+**`src/data_preprocessing.py`:**
+- Added imports: `os`, `json`, `datetime`
+- Added `save_data_stats(df, path, label)`:
+  - Computes per-column stats: `dtype`, `null_count`, `null_pct`, `unique_count`
+  - Numeric columns: additionally computes `mean`, `std`, `min`, `p25`, `p50`, `p75`, `max`
+  - Categorical columns: additionally captures `top_value` (most frequent)
+  - Writes a timestamped JSON file to `path`; creates parent dirs if needed
+
+**`main.py`:**
+- Added import: `save_data_stats` from `src.data_preprocessing`
+- Added `save_data_stats(df, 'data/stats_raw.json', label='raw')` after load/sample — captures raw distribution before any cleaning
+- Added `save_data_stats(data['df'], 'data/stats_clean.json', label='clean')` after `preprocess_data()` — captures clean distribution
+
+**`docs/template.md` (new):**
+- Project README template pre-filled with business case, folder structure, pipeline overview, and API overview
+
+**`docs/checklist.md` (new):**
+- ML best-practices checklist tracking which items are implemented (✅) vs outstanding ([ ])
+
+### Results
+No model results changed — infrastructure/tooling experiment only.  
+**Test RMSE (unchanged):** 2,232.51
+
+---
