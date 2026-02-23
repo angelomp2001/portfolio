@@ -183,3 +183,34 @@ No model results changed — infrastructure/tooling experiment only.
 vs EXP-002 baseline RMSE 2,232.51 — improved by ~37 points.
 
 ---
+
+## EXP-005 — Improve Readability ✅
+
+**Branch:** `experiments/EXP-005-Improve-Readability`  
+**Date:** 2026-02-23  
+**Merged:** 2026-02-23  
+**Status:** ✅ Success
+
+### Code Changes
+- Refined project structure by centralizing configuration, standardizing model pipelines, and improving code organization.
+- Inferred column data types dynamically instead of hardcoding them.
+- Renamed variables for clarity (e.g., `n_folds` to `k_folds`).
+- Replaced custom data splitting functions with native `train_test_split(X, y)`.
+- Prepared for classification tasks by adding a commented-out classification model list in `main.py`.
+- Uncommented `evaluate_model` and `save_best_model` to save metrics.
+
+### Results
+
+**Best model:** CatBoostRegressor  
+**Best hyperparameters:** `n_estimators=145`, `max_depth=6`, `learning_rate=0.2`
+
+| Metric | Value |
+|--------|-------|
+| RMSE   | 2,094.39 |
+| MSE    | 4,386,460.50 |
+| MAE    | 1,454.92 |
+| R²     | 0.8177 |
+
+vs EXP-004 baseline RMSE 2,195.02 — improved by ~100 points.
+
+---
