@@ -1,0 +1,17 @@
+{
+  "name": "CatBoostRegressor",
+  "model_path": "models\\best_model.joblib",
+  "params": {
+    "n_estimators": 140,
+    "max_depth": 7,
+    "learning_rate": 0.1
+  },
+  "metrics": {
+    "rmse": 2195.021773228099,
+    "mse": 4818120.584945428,
+    "mae": 1562.496411125804,
+    "r2": 0.799760685451171,
+    "pred_time": 0.004801750183105469
+  },
+  "timestamp": "2026-02-22T23:49:49.011033"
+}

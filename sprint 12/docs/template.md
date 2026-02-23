@@ -65,5 +65,4 @@ Send POST requests to `http://127.0.0.1:8000/predict` with a JSON body containin
 
 ## API Overview
 ├── Load — Load best model
-├── Predict — Apply model to input API data
-├── Save — Save Results  
+└── Predict — Apply model to input API data

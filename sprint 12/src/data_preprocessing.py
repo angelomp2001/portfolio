@@ -1,43 +1,162 @@
 import os
 import json
-import pandas as pd
+import tracemalloc
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 from datetime import datetime
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import (OneHotEncoder, OrdinalEncoder,
+                                   StandardScaler, PolynomialFeatures)
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-# Price-related constants
-PRICE_MIN       = 500
+from src import charts
 
-# Year range for registration
-YEAR_MIN, YEAR_MAX = 1900, 2025
+# ── Column roles ──────────────────────────────────────────────────────────────
+TARGET_COL       = 'Price'                                  # Label target ✅
+CATEGORICAL_COLS = ['VehicleType', 'Gearbox', 'Model',     # Label categorical ✅
+                    'FuelType', 'Brand', 'NotRepaired']
+NUMERIC_COLS     = ['RegistrationYear', 'Power', 'Kilometer']  # Label numeric ✅
+COLS_TO_DROP     = ['DateCrawled', 'RegistrationMonth', 'DateCreated',
+                    'NumberOfPictures', 'PostalCode', 'LastSeen']
 
-# Power range for cars
+# ── Value-range guards ────────────────────────────────────────────────────────
+PRICE_MIN            = 500
+YEAR_MIN, YEAR_MAX   = 1900, 2025
 POWER_MIN, POWER_MAX = 100, 400
 
-# Random state for reproducibility
+# ── Split config ──────────────────────────────────────────────────────────────
+TEST_RATIO   = 0.2
 RANDOM_STATE = 12345
 
-# Ratios for splitting the dataset
-TRAIN_RATIO, VALID_RATIO, TEST_RATIO = 0.6, 0.2, 0.2
 
-COLS_TO_DROP    = ['DateCrawled', 'RegistrationMonth', 'DateCreated',
-                   'NumberOfPictures', 'PostalCode', 'LastSeen']
-CATEGORICAL_COLS = ['VehicleType', 'Gearbox', 'Model', 'FuelType', 'Brand', 'NotRepaired']
+# ── Load ──────────────────────────────────────────────────────────────────────
+def load_data(path):
+    return pd.read_csv(path)
 
 
-# ── Save data statistics (for drift tracking) ────────────────────────────────
+# ── Clean ─────────────────────────────────────────────────────────────────────
+def clean_data(df):
+    """
+    Drop irrelevant columns, nullify out-of-range values,
+    fill categorical NaN, dedup, and dropna.
+    Returns a cleaned DataFrame (does not encode or scale).
+    """
+    df = df.copy()
+    df = df.drop(columns=COLS_TO_DROP, errors='ignore')
+
+    # Price: values below minimum are invalid
+    df[TARGET_COL] = np.where(df[TARGET_COL] >= PRICE_MIN, df[TARGET_COL], np.nan)
+
+    # RegistrationYear: sentinel 0 for out-of-range (keeps row)
+    df['RegistrationYear'] = df['RegistrationYear'].where(
+        (df['RegistrationYear'] >= YEAR_MIN) & (df['RegistrationYear'] <= YEAR_MAX)
+    ).fillna(0)
+
+    # Power: out-of-range → NaN (row dropped at dropna)
+    df['Power'] = df['Power'].where(
+        (df['Power'] >= POWER_MIN) & (df['Power'] <= POWER_MAX)
+    )
+
+    # Categorical NaN → explicit 'missing' category
+    for col in CATEGORICAL_COLS:
+        if col in df.columns:
+            df[col] = df[col].fillna('missing')
+
+    df.drop_duplicates(inplace=True)
+    df.dropna(inplace=True)
+    return df
+
+
+# ── Split ─────────────────────────────────────────────────────────────────────
+def split_data(df, test_ratio=TEST_RATIO, random_state=RANDOM_STATE):
+    """
+    Split cleaned DataFrame into X/y train-pool and test sets.
+    Encoding and scaling happen inside the Pipeline, not here.
+    """
+    y = df[TARGET_COL]
+    X = df.drop(columns=[TARGET_COL])
+    return train_test_split(X, y, test_size=test_ratio, random_state=random_state)
+
+
+# ── Preprocessor factory ──────────────────────────────────────────────────────
+def build_preprocessor(cat_cols, num_cols, is_tree=False):
+    """
+    Build a ColumnTransformer for use inside an sklearn Pipeline.
+
+    is_tree=False (linear / NN):
+        Categorical → OHE
+        Numeric     → StandardScaler → PolynomialFeatures(2) → StandardScaler
+                      (PolyFeatures applied only to numeric to avoid feature explosion) ✅
+
+    is_tree=True (LGBM, RF, CatBoost, XGB):
+        Categorical → OrdinalEncoder   (handles high cardinality efficiently)
+        Numeric     → passthrough       (tree models don't need scaling)
+    """
+    if is_tree:
+        return ColumnTransformer([
+            ('cat', OrdinalEncoder(
+                handle_unknown='use_encoded_value', unknown_value=-1), cat_cols),
+            ('num', 'passthrough', num_cols),
+        ], remainder='drop')
+    else:
+        # Apply PolynomialFeatures only to numeric columns to avoid OHE explosion
+        num_pipeline = Pipeline([
+            ('scale1', StandardScaler()),
+            ('poly',   PolynomialFeatures(degree=2, include_bias=False)),
+            ('scale2', StandardScaler()),
+        ])
+        return ColumnTransformer([
+            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), cat_cols),
+            ('num', num_pipeline, num_cols),
+        ], remainder='drop')
+
+
+# ── Visualize data ────────────────────────────────────────────────────────────
+def visualize_data(df, label, out_path):
+    """
+    Plot histograms for numeric columns and bar charts for categorical ones.
+    Saves to out_path. Reusable for both raw and clean data. ✅
+    """
+    num_cols = df.select_dtypes(include='number').columns.tolist()
+    cat_cols = df.select_dtypes(include='object').columns.tolist()
+    all_cols = num_cols + cat_cols
+
+    ncols = 4
+    nrows = max(1, (len(all_cols) + ncols - 1) // ncols)
+    fig, axes = charts.new_figure(nrows, ncols, title=f"{label} Data — Distributions",
+                                  figsize=(ncols * 4, nrows * 3))
+    axes_flat = np.array(axes).flatten()
+
+    for i, col in enumerate(all_cols):
+        ax = axes_flat[i]
+        if col in num_cols:
+            ax.hist(df[col].dropna(), bins=30,
+                    color=charts.COLORS[0], edgecolor=charts.BORDER)
+            charts.style_axes(ax, title=col, xlabel=col, ylabel='Count')
+        else:
+            vc = df[col].value_counts().head(10)
+            ax.barh(vc.index[::-1], vc.values[::-1],
+                    color=charts.COLORS[1], edgecolor=charts.BORDER)
+            charts.style_axes(ax, title=col, xlabel='Count')
+            ax.tick_params(axis='y', labelsize=7)
+
+    for j in range(len(all_cols), len(axes_flat)):
+        axes_flat[j].set_visible(False)
+
+    plt.tight_layout()
+    os.makedirs(os.path.dirname(out_path) or '.', exist_ok=True)
+    fig.savefig(out_path, bbox_inches='tight', facecolor=charts.BG, dpi=100)
+    plt.close(fig)
+    print(f"[viz]   Saved {label} visualization → {out_path}")
+
+
+# ── Save data statistics ──────────────────────────────────────────────────────
 def save_data_stats(df, path, label="data"):
     """
     Compute and save descriptive statistics for a DataFrame to a JSON file.
-    Call on both raw and clean data to enable data drift tracking across runs.
-
-    Parameters
-    ----------
-    df    : pd.DataFrame
-    path  : str  — output file path (e.g. 'data/stats_raw.json')
-    label : str  — human-readable tag written into the file (e.g. 'raw', 'clean')
+    Call on both raw and clean data to enable data drift tracking across runs. ✅
     """
     stats = {
         "label":     label,
@@ -55,13 +174,13 @@ def save_data_stats(df, path, label="data"):
         }
         if pd.api.types.is_numeric_dtype(df[col]):
             col_stats.update({
-                "mean": round(float(df[col].mean()),              4),
-                "std":  round(float(df[col].std()),               4),
-                "min":  round(float(df[col].min()),               4),
-                "p25":  round(float(df[col].quantile(0.25)),      4),
-                "p50":  round(float(df[col].quantile(0.50)),      4),
-                "p75":  round(float(df[col].quantile(0.75)),      4),
-                "max":  round(float(df[col].max()),               4),
+                "mean": round(float(df[col].mean()),         4),
+                "std":  round(float(df[col].std()),          4),
+                "min":  round(float(df[col].min()),          4),
+                "p25":  round(float(df[col].quantile(0.25)), 4),
+                "p50":  round(float(df[col].quantile(0.50)), 4),
+                "p75":  round(float(df[col].quantile(0.75)), 4),
+                "max":  round(float(df[col].max()),          4),
             })
         else:
             top = df[col].mode()
@@ -75,183 +194,3 @@ def save_data_stats(df, path, label="data"):
 
     print(f"[stats] Saved {label} statistics → {path}  "
           f"({df.shape[0]:,} rows × {df.shape[1]} cols)")
-
-
-# ── Load ──────────────────────────────────────────────────────────────────────
-def load_data(path):
-    return pd.read_csv(path)
-
-
-# ── Preprocess ────────────────────────────────────────────────────────────────
-def preprocess_data(df):
-    """
-    Clean, encode, split, and scale the car dataset.
-
-    Returns a nested dict with keys: 'df', 'categorical', 'regression', 'ml'.
-    Each model-type key contains: 'train', 'valid', 'test', and 'scaled'.
-    'scaled' contains 'features' and 'targets' for each split.
-    """
-
-    # ── Drop irrelevant columns ───────────────────────────────────────────────
-    df = df.drop(columns=COLS_TO_DROP, errors='ignore')
-
-    # ── Clean numeric columns ─────────────────────────────────────────────────
-    # Price: values below PRICE_MIN are likely invalid/missing
-    df['Price'] = np.where(df['Price'] >= PRICE_MIN, df['Price'], np.nan)
-
-    # RegistrationYear: out-of-range values treated as missing; sentinel 0 keeps the row
-    df['RegistrationYear'] = df['RegistrationYear'].where(
-        (df['RegistrationYear'] >= YEAR_MIN) & (df['RegistrationYear'] <= YEAR_MAX)
-    ).fillna(0)
-
-    # Power: out-of-range values treated as NaN (row removed later in dropna)
-    df['Power'] = df['Power'].where(
-        (df['Power'] >= POWER_MIN) & (df['Power'] <= POWER_MAX)
-    )
-
-    # ── Handle missing values in categorical columns ───────────────────────────
-    for col in CATEGORICAL_COLS:
-        df[col] = df[col].fillna('missing')
-
-    # ── Row-level cleanup ─────────────────────────────────────────────────────
-    df.drop_duplicates(inplace=True)
-    df.dropna(inplace=True)
-
-    # ── Move target to first column ───────────────────────────────────────────
-    target = 'Price'
-    df = df[[target] + [col for col in df.columns if col != target]]
-
-    # ── Train / Validation / Test split ──────────────────────────────────────
-    df_temp, df_test = train_test_split(df, test_size=TEST_RATIO, random_state=RANDOM_STATE)
-    adjusted_valid_ratio = VALID_RATIO / (1 - TEST_RATIO)
-    df_train, df_valid = train_test_split(df_temp, test_size=adjusted_valid_ratio, random_state=RANDOM_STATE)
-
-    categorical = CATEGORICAL_COLS
-
-    # ── Encode: Regression (One-Hot Encoding) ─────────────────────────────────
-
-    # Instantiate OneHotEncoder with specified options
-    ohe = OneHotEncoder(handle_unknown='ignore', sparse_output=False)  # Creates an encoder to handle categorical features
-
-    # Fit the encoder on the training data's categorical features and get feature names
-    ohe_cols = ohe.fit(df_train[categorical]).get_feature_names_out(categorical)  # Returns array of new OHE column names
-
-    # Define a function to transform a DataFrame using One-Hot Encoding
-    def _ohe_transform(source_df, fit=False):
-        # Apply OHE to source_df
-        encoded = ohe.fit_transform(source_df[categorical]) if fit else ohe.transform(source_df[categorical])  # Encodes categorical features (dtype: ndarray)
-        
-        # Create DataFrame from the encoded array
-        encoded_df = pd.DataFrame(encoded, columns=ohe_cols, index=source_df.index)  # New DataFrame with OHE columns (dtype: DataFrame)
-        
-        # Create new DataFrame by concatenating the original DataFrame (without categorical columns) with the newly encoded DataFrame
-        return pd.concat([source_df.drop(columns=categorical), encoded_df], axis=1)  # Returns DataFrame with numeric and OHE columns
-
-    # Fit the encoder on the training data's categorical features (prep for transforming)
-    ohe.fit(df_train[categorical])  # Fits encoder to train data (captures categories)
-
-    # Transform the training DataFrame using the One-Hot Encoder; do not fit again
-    df_train_regressions = _ohe_transform(df_train, fit=False)  # DataFrame with OHE applied (e.g., shape: (n_samples, n_features))
-
-    # Transform the validation DataFrame using the previously fitted One-Hot Encoder
-    df_valid_regressions = _ohe_transform(df_valid)  # DataFrame with OHE applied, following same feature set as training
-
-    # Transform the test DataFrame using the previously fitted One-Hot Encoder
-    df_test_regressions  = _ohe_transform(df_test)  # DataFrame with OHE applied, ensures same encoding for comparison
-
-    # ── Encode: ML (Label Encoding) ───────────────────────────────────────────
-    df_train_ML = df_train.copy()
-    df_valid_ML = df_valid.copy()
-    df_test_ML  = df_test.copy()
-
-    for each_df in [df_train_ML, df_valid_ML, df_test_ML]:
-        for col in categorical:
-            unique_values  = sorted(each_df[col].dropna().unique())
-            mapping_dict   = {val: idx for idx, val in enumerate(unique_values)}
-            each_df[col]   = each_df[col].map(mapping_dict)
-
-    # ── Scale features ────────────────────────────────────────────────────────
-    scaler = StandardScaler()
-
-    # Regression
-    df_train_regressions_scaled = df_train_regressions.copy()
-    df_valid_regressions_scaled = df_valid_regressions.copy()
-    df_test_regressions_scaled  = df_test_regressions.copy()
-
-    # ensure column names are strings
-    df_train_regressions_scaled.columns = df_train_regressions_scaled.columns.map(str)
-    df_valid_regressions_scaled.columns = df_valid_regressions_scaled.columns.map(str)
-    df_test_regressions_scaled.columns  = df_test_regressions_scaled.columns.map(str)
-
-    # Get feature names (all columns except the first one, which is the target)
-    features_name_reg = df_train_regressions_scaled.columns[1:]
-    
-    # Fit the scaler on the training data and transform it
-    features_train_regressions_scaled = scaler.fit_transform(df_train_regressions_scaled[features_name_reg])
-    
-    # Transform the validation and test data using the same scaler
-    feature_valid_regressions_scaled  = scaler.transform(df_valid_regressions_scaled[features_name_reg])
-    feature_test_regressions_scaled   = scaler.transform(df_test_regressions_scaled[features_name_reg])
-
-    # ML
-    df_train_ML_scaled = df_train_ML.copy()
-    df_valid_ML_scaled = df_valid_ML.copy()
-    df_test_ML_scaled  = df_test_ML.copy()
-
-    # Get feature names (all columns except the first one, which is the target)
-    features_name_ML = df_train_ML_scaled.columns[1:]
-    
-    # Fit the scaler on the training data and transform it
-    feature_train_ML_scaled = scaler.fit_transform(df_train_ML_scaled[features_name_ML])
-    
-    # Transform the validation and test data using the same scaler
-    feature_valid_ML_scaled = scaler.transform(df_valid_ML_scaled[features_name_ML])
-    feature_test_ML_scaled  = scaler.transform(df_test_ML_scaled[features_name_ML])
-
-    # ── Vectorize targets ─────────────────────────────────────────────────────
-    return {
-        'df':          df,
-        'categorical': categorical,
-        'regression': {
-            'train': df_train_regressions,
-            'valid': df_valid_regressions,
-            'test':  df_test_regressions,
-            'scaled': {
-                'train': df_train_regressions_scaled,
-                'valid': df_valid_regressions_scaled,
-                'test':  df_test_regressions_scaled,
-                'features': {
-                    'train': features_train_regressions_scaled,
-                    'valid': feature_valid_regressions_scaled,
-                    'test':  feature_test_regressions_scaled,
-                },
-                'targets': {
-                    'train': df_train_regressions_scaled['Price'].to_numpy(),
-                    'valid': df_valid_regressions_scaled['Price'].to_numpy(),
-                    'test':  df_test_regressions_scaled['Price'].to_numpy(),
-                },
-            },
-        },
-        'ml': {
-            'train': df_train_ML,
-            'valid': df_valid_ML,
-            'test':  df_test_ML,
-            'scaled': {
-                'train': df_train_ML_scaled,
-                'valid': df_valid_ML_scaled,
-                'test':  df_test_ML_scaled,
-                'features': {
-                    'train': feature_train_ML_scaled,
-                    'valid': feature_valid_ML_scaled,
-                    'test':  feature_test_ML_scaled,
-                },
-                'targets': {
-                    'train': df_train_ML_scaled['Price'].to_numpy(),
-                    'valid': df_valid_ML_scaled['Price'].to_numpy(),
-                    'test':  df_test_ML_scaled['Price'].to_numpy(),
-                },
-            },
-        },
-    }
-
-# model_training() has been moved to src/model_training.py
