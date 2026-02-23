@@ -10,12 +10,12 @@ import catboost as cb
 import xgboost as xgb
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
 from src.data_preprocessing import (
-    load_data, clean_data, split_data, build_preprocessor,
+    load_data, clean_data, build_preprocessor,
     save_data_stats, visualize_data,
-    CATEGORICAL_COLS, NUMERIC_COLS,
 )
 from src.model_training import (
     KerasRegressorWrapper, build_keras_model,
@@ -27,7 +27,60 @@ from src.model_training import (
 DATA_PATH    = 'data/car_data.csv'
 SAMPLE_SIZE  = 10_000
 RANDOM_STATE = 12345
+K_FOLDS      = 5           # k for KFold CV
 N_ITER_TUNE  = 20
+
+# ── Column roles ──────────────────────────────────────────────────────────────
+# cat/num feature columns are inferred from dtype
+TARGET_COL   = 'Price'
+COLS_TO_DROP = ['DateCrawled', 'RegistrationMonth', 'DateCreated',
+                'NumberOfPictures', 'PostalCode', 'LastSeen']
+
+# ── Value-range guards ────────────────────────────────────────────────────────
+PRICE_MIN            = 500
+YEAR_MIN, YEAR_MAX   = 1900, 2025
+POWER_MIN, POWER_MAX = 100, 400
+
+# ── Split config ──────────────────────────────────────────────────────────────
+TEST_RATIO = 0.2
+
+# ── Keras hyperparameters ─────────────────────────────────────────────────────
+KERAS_EPOCHS           = 150
+KERAS_BATCH_SIZE       = 64
+KERAS_VALIDATION_SPLIT = 0.1
+KERAS_DROPOUT_RATE     = 0.3
+KERAS_LEARNING_RATE    = 0.001
+
+# ── Models — Regression ───────────────────────────────────────────────────────
+# Each entry: (name, model_instance, is_tree)
+# is_tree=True  → OrdinalEncoding, no scaling (LGBM, RF, CatBoost, XGB)
+# is_tree=False → OHE + PolynomialFeatures(degree=2) + StandardScaler (Linear, Keras NN)
+MODELS = [
+    ("LinearRegression",      LinearRegression(),                               False),
+    ("KerasRegressorWrapper", KerasRegressorWrapper(
+                                  build_fn=build_keras_model,
+                                  epochs=KERAS_EPOCHS,
+                                  batch_size=KERAS_BATCH_SIZE,
+                                  validation_split=KERAS_VALIDATION_SPLIT,
+                                  dropout_rate=KERAS_DROPOUT_RATE,
+                                  learning_rate=KERAS_LEARNING_RATE,
+                              ),                                                False),
+    ("LGBMRegressor",         lgb.LGBMRegressor(verbose=-1),                   True),
+    ("RandomForestRegressor", RandomForestRegressor(),                          True),
+    ("CatBoostRegressor",     cb.CatBoostRegressor(verbose=0),                 True),
+    ("XGBRegressor",          xgb.XGBRegressor(),                              True),
+]
+
+# ── Models — Classification (swap in when TARGET_COL is categorical) ──────────
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.ensemble import RandomForestClassifier
+# MODELS_CLASSIFICATION = [
+#     ("LogisticRegression",       LogisticRegression(max_iter=1000),            False),
+#     ("LGBMClassifier",           lgb.LGBMClassifier(verbose=-1),               True),
+#     ("RandomForestClassifier",   RandomForestClassifier(),                     True),
+#     ("CatBoostClassifier",       cb.CatBoostClassifier(verbose=0),             True),
+#     ("XGBClassifier",            xgb.XGBClassifier(),                         True),
+# ]
 
 # ── Load ──────────────────────────────────────────────────────────────────────
 df_raw = load_data(DATA_PATH)
@@ -35,69 +88,54 @@ df_raw = df_raw.sample(SAMPLE_SIZE, random_state=RANDOM_STATE)
 print(f"Loaded data — shape: {df_raw.shape}\n")
 
 # ── Raw data: stats + visualizations ─────────────────────────────────────────
-save_data_stats(df_raw, 'data/stats_raw.json',   label='raw')
-visualize_data(df_raw,  label='Raw',  out_path='data/viz_raw.png')
+# save_data_stats(df_raw, 'data/stats_raw.json',   label='raw')
+# visualize_data(df_raw,  label='Raw',  out_path='data/viz_raw.png')
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
-df = clean_data(df_raw)
+df = clean_data(
+    df_raw,
+    target_col=TARGET_COL,
+    cols_to_drop=COLS_TO_DROP,
+    price_min=PRICE_MIN,
+    year_min=YEAR_MIN, year_max=YEAR_MAX,
+    power_min=POWER_MIN, power_max=POWER_MAX,
+)
 print(f"After cleaning — shape: {df.shape}\n")
 
 # ── Clean data: stats + visualizations ───────────────────────────────────────
-save_data_stats(df, 'data/stats_clean.json', label='clean')
-visualize_data(df,  label='Clean', out_path='data/viz_clean.png')
+# save_data_stats(df, 'data/stats_clean.json', label='clean')
+# visualize_data(df,  label='Clean', out_path='data/viz_clean.png')
 
 # ── Split: 80% train-pool / 20% final holdout test ───────────────────────────
-X_train, X_test, y_train, y_test = split_data(df)
+X = df.drop(columns=[TARGET_COL])
+y = df[TARGET_COL]
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=TEST_RATIO, 
+    random_state=RANDOM_STATE,
+)
 print(f"Train pool: {X_train.shape[0]:,} rows  |  Test: {X_test.shape[0]:,} rows\n")
 
-# ── Build preprocessors ───────────────────────────────────────────────────────
-# Column lists inferred from the cleaned DataFrame (order matches build_preprocessor)
-cat_cols = [c for c in CATEGORICAL_COLS if c in X_train.columns]
-num_cols = [c for c in NUMERIC_COLS     if c in X_train.columns]
+# ── Infer cat/num cols from dtype (after cleaning, target already dropped) ────
+cat_cols = X_train.select_dtypes(include='object').columns.tolist()
+num_cols = X_train.select_dtypes(include='number').columns.tolist()
 
-prep_reg  = build_preprocessor(cat_cols, num_cols, is_tree=False)  # OHE + PolyFeat + Scale
-prep_tree = build_preprocessor(cat_cols, num_cols, is_tree=True)   # OrdinalEnc + passthrough
+# ── Build pipelines (for loop — every model goes through the same pattern) ────
+# Non-tree  → OHE + PolynomialFeatures(degree=2) + StandardScaler  ✅
+# Tree      → OrdinalEncoding, no scaling                           ✅
+pipelines = {}
+for name, model, is_tree in MODELS:
+    pipelines[name] = Pipeline([
+        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=is_tree)),
+        ("model", model),
+    ])
 
-# ── Build pipelines ───────────────────────────────────────────────────────────
-# Each pipeline = preprocessor + model.
-# Non-tree models get OHE + PolynomialFeatures(degree=2) on numeric cols. ✅
-# Tree models get OrdinalEncoding (no scaling needed).                     ✅
-# Keras NN uses the same non-tree preprocessor as LinearRegression.        ✅
-pipelines = {
-    "LinearRegression": Pipeline([
-        ("prep",  prep_reg),
-        ("model", LinearRegression()),
-    ]),
-    "KerasRegressorWrapper": Pipeline([
-        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=False)),
-        ("model", KerasRegressorWrapper(
-            build_fn=build_keras_model,
-            epochs=150, batch_size=64,
-            validation_split=0.1,
-            dropout_rate=0.3,
-            learning_rate=0.001,
-        )),
-    ]),
-    "LGBMRegressor": Pipeline([
-        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
-        ("model", lgb.LGBMRegressor(verbose=-1)),
-    ]),
-    "RandomForestRegressor": Pipeline([
-        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
-        ("model", RandomForestRegressor()),
-    ]),
-    "CatBoostRegressor": Pipeline([
-        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
-        ("model", cb.CatBoostRegressor(verbose=0)),
-    ]),
-    "XGBRegressor": Pipeline([
-        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=True)),
-        ("model", xgb.XGBRegressor()),
-    ]),
-}
-
-# ── 5-fold CV: train & compare all candidates ─────────────────────────────────
-results, best_name = train_candidates(pipelines, X_train, y_train)
+# ── K-fold CV: train & compare all candidates ─────────────────────────────────
+results, best_name = train_candidates(
+    pipelines, X_train, y_train,
+    k_folds=K_FOLDS, random_state=RANDOM_STATE,
+)
 
 # ── Tune the best model (random search with live chart) ───────────────────────
 best_pipeline, best_params = tune_model(
@@ -112,7 +150,6 @@ if isinstance(final_step, KerasRegressorWrapper) and final_step.history_ is not 
     plot_keras_history(final_step.history_, name=best_name)
 
 # ── Save best model ───────────────────────────────────────────────────────────
-# Evaluate first so we have metrics for the metadata file
 test_metrics = evaluate_model(best_pipeline, X_test, y_test)
 save_best_model(best_pipeline, best_name, best_params, test_metrics)
 

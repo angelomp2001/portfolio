@@ -1,34 +1,15 @@
 import os
 import json
-import tracemalloc
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import (OneHotEncoder, OrdinalEncoder,
                                    StandardScaler, PolynomialFeatures)
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 
 from src import charts
-
-# ── Column roles ──────────────────────────────────────────────────────────────
-TARGET_COL       = 'Price'                                  # Label target ✅
-CATEGORICAL_COLS = ['VehicleType', 'Gearbox', 'Model',     # Label categorical ✅
-                    'FuelType', 'Brand', 'NotRepaired']
-NUMERIC_COLS     = ['RegistrationYear', 'Power', 'Kilometer']  # Label numeric ✅
-COLS_TO_DROP     = ['DateCrawled', 'RegistrationMonth', 'DateCreated',
-                    'NumberOfPictures', 'PostalCode', 'LastSeen']
-
-# ── Value-range guards ────────────────────────────────────────────────────────
-PRICE_MIN            = 500
-YEAR_MIN, YEAR_MAX   = 1900, 2025
-POWER_MIN, POWER_MAX = 100, 400
-
-# ── Split config ──────────────────────────────────────────────────────────────
-TEST_RATIO   = 0.2
-RANDOM_STATE = 12345
 
 
 # ── Load ──────────────────────────────────────────────────────────────────────
@@ -37,47 +18,42 @@ def load_data(path):
 
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
-def clean_data(df):
+def clean_data(df, target_col='Price', cols_to_drop=None,
+               price_min=500, year_min=1900, year_max=2025,
+               power_min=100, power_max=400):
     """
     Drop irrelevant columns, nullify out-of-range values,
-    fill categorical NaN, dedup, and dropna.
+    fill categorical NaN (any object col), dedup, and dropna.
     Returns a cleaned DataFrame (does not encode or scale).
+    Cat/num column lists are NOT passed in — callers infer them from
+    dtype on the cleaned data instead.
     """
+    if cols_to_drop is None:
+        cols_to_drop = []
+
     df = df.copy()
-    df = df.drop(columns=COLS_TO_DROP, errors='ignore')
+    df = df.drop(columns=cols_to_drop, errors='ignore')
 
     # Price: values below minimum are invalid
-    df[TARGET_COL] = np.where(df[TARGET_COL] >= PRICE_MIN, df[TARGET_COL], np.nan)
+    df[target_col] = np.where(df[target_col] >= price_min, df[target_col], np.nan)
 
     # RegistrationYear: sentinel 0 for out-of-range (keeps row)
     df['RegistrationYear'] = df['RegistrationYear'].where(
-        (df['RegistrationYear'] >= YEAR_MIN) & (df['RegistrationYear'] <= YEAR_MAX)
+        (df['RegistrationYear'] >= year_min) & (df['RegistrationYear'] <= year_max)
     ).fillna(0)
 
     # Power: out-of-range → NaN (row dropped at dropna)
     df['Power'] = df['Power'].where(
-        (df['Power'] >= POWER_MIN) & (df['Power'] <= POWER_MAX)
+        (df['Power'] >= power_min) & (df['Power'] <= power_max)
     )
 
-    # Categorical NaN → explicit 'missing' category
-    for col in CATEGORICAL_COLS:
-        if col in df.columns:
-            df[col] = df[col].fillna('missing')
+    # Categorical NaN → explicit 'missing' category (inferred from dtype)
+    for col in df.select_dtypes(include='object').columns:
+        df[col] = df[col].fillna('missing')
 
     df.drop_duplicates(inplace=True)
     df.dropna(inplace=True)
     return df
-
-
-# ── Split ─────────────────────────────────────────────────────────────────────
-def split_data(df, test_ratio=TEST_RATIO, random_state=RANDOM_STATE):
-    """
-    Split cleaned DataFrame into X/y train-pool and test sets.
-    Encoding and scaling happen inside the Pipeline, not here.
-    """
-    y = df[TARGET_COL]
-    X = df.drop(columns=[TARGET_COL])
-    return train_test_split(X, y, test_size=test_ratio, random_state=random_state)
 
 
 # ── Preprocessor factory ──────────────────────────────────────────────────────
