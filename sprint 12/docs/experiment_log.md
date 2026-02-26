@@ -214,3 +214,32 @@ vs EXP-002 baseline RMSE 2,232.51 — improved by ~37 points.
 vs EXP-004 baseline RMSE 2,195.02 — improved by ~100 points.
 
 ---
+
+## EXP-014 — Refactor Preprocessor ✅
+
+**Branch:** `experiments/EXP-014-Refactor-Preprocessor`  
+**Date:** 2026-02-26  
+**Merged:** 2026-02-26  
+**Status:** ✅ Success
+
+### Code Changes
+- Inlined the `num_pipeline` variable natively into the `ColumnTransformer`.
+- Added developer inline comments to detail step-by-step logic during preprocessing.
+- Triggered metrics logging to properly save results in the latest format.
+
+### Results
+
+**Best model:** CatBoostRegressor  
+**Best hyperparameters:** `n_estimators=145`, `max_depth=6`, `learning_rate=0.2`  
+
+| Metric | Test Value |
+|--------|-----------|
+| RMSE   | 2,094.39  |
+| MSE    | 4,386,460.50 |
+| MAE    | 1,454.92  |
+| R²     | 0.8177    |
+| Pred time | ~0.004s |
+
+**Comparison to EXP-005 baseline (RMSE 2,094.39):** No change since this was a pure refactoring and documentation exercise.
+
+---
