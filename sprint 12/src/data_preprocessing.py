@@ -57,7 +57,7 @@ def clean_data(df, target_col='Price', cols_to_drop=None,
 
 
 # ── Preprocessor factory ──────────────────────────────────────────────────────
-def build_preprocessor(cat_cols, num_cols, is_tree=False):
+def column_preprocessor(cat_cols, num_cols, is_tree=False):
     """
     Build a ColumnTransformer for use inside an sklearn Pipeline.
 
@@ -71,22 +71,22 @@ def build_preprocessor(cat_cols, num_cols, is_tree=False):
         Numeric     → passthrough       (tree models don't need scaling)
     """
     if is_tree:
-        return ColumnTransformer([
-            ('cat', OrdinalEncoder(
-                handle_unknown='use_encoded_value', unknown_value=-1), cat_cols),
-            ('num', 'passthrough', num_cols),
-        ], remainder='drop')
+        # Apply to tree models
+        return ColumnTransformer([ # split cat and num columns and runs parallel processes
+            ('cat', OrdinalEncoder( # encode categorical columns in the same column
+                handle_unknown='use_encoded_value', unknown_value=-1), cat_cols), # unknown_value=-1 means that if a value is not found, it will be encoded as -1
+            ('num', 'passthrough', num_cols), # numeric columns are passed through (don't need scaling or polynomial features for tree models)
+        ], remainder='drop') # drop columns that are not specified
     else:
-        # Apply PolynomialFeatures only to numeric columns to avoid OHE explosion
-        num_pipeline = Pipeline([
-            ('scale1', StandardScaler()),
-            ('poly',   PolynomialFeatures(degree=2, include_bias=False)),
-            ('scale2', StandardScaler()),
-        ])
-        return ColumnTransformer([
-            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), cat_cols),
-            ('num', num_pipeline, num_cols),
-        ], remainder='drop')
+        # Apply to linear / NN models
+        return ColumnTransformer([ 
+            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), cat_cols), # dummy encoding
+            ('num', Pipeline([ # runs num cols in serial process
+                ('scale1', StandardScaler()), # 1. scale to mean 0 and variance 1
+                ('poly',   PolynomialFeatures(degree=2, include_bias=False)), # 2. create polynomial features
+                ('scale2', StandardScaler()), # 3. rescale
+            ]), num_cols), # apply to numeric columns
+        ], remainder='drop') # drop columns that are not specified
 
 
 # ── Visualize data ────────────────────────────────────────────────────────────

@@ -10,3 +10,4 @@ See `experiment_log.md` for merged results and `RESULTS.md` for the current bran
 | EXP-003 | experiments/EXP-003-Add-Data-Drift-Tracking | Add save_data_stats() to capture raw and clean data statistics each run for drift tracking; add template.md and checklist.md | ✅ | — |
 | EXP-004 | experiments/EXP-004-Complete-Checklist | Add Keras NN, 5-fold CV, sklearn Pipelines, PolynomialFeatures, visualizations, multi-metric eval, peak memory tracking, model saving | ✅ | 2,195.02 |
 | EXP-005 | experiments/EXP-005-Improve-Readability | Refining project structure, using train_test_split natively, renamed parameters, commented out classifier models, and inferred dtype logic. | ✅ | 2,094.39 |
+| EXP-014 | experiments/EXP-014-Refactor-Preprocessor | Inline the numerical preprocessing pipeline into ColumnTransformer and adding step-by-step documentation inline. | ✅ | 2,094.39 |

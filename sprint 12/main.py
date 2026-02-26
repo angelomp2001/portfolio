@@ -4,6 +4,7 @@ Business case: Client wants to offer their customers an automated estimate
 Project goal:  Predict 'Price' using structured car listing data.
 """
 
+# ── Imports ───────────────────────────────────────────────────────────────────
 import matplotlib.pyplot as plt
 import lightgbm as lgb
 import catboost as cb
@@ -14,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
 from src.data_preprocessing import (
-    load_data, clean_data, build_preprocessor,
+    load_data, clean_data, column_preprocessor,
     save_data_stats, visualize_data,
 )
 from src.model_training import (
@@ -102,11 +103,11 @@ df = clean_data(
 )
 print(f"After cleaning — shape: {df.shape}\n")
 
-# ── Clean data: stats + visualizations ───────────────────────────────────────
+# ── View: stats + visualizations ───────────────────────────────────────────
 # save_data_stats(df, 'data/stats_clean.json', label='clean')
 # visualize_data(df,  label='Clean', out_path='data/viz_clean.png')
 
-# ── Split: 80% train-pool / 20% final holdout test ───────────────────────────
+# ── Split: ──────────────────────────────────────────────────────────────
 X = df.drop(columns=[TARGET_COL])
 y = df[TARGET_COL]
 X_train, X_test, y_train, y_test = train_test_split(
@@ -117,27 +118,27 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 print(f"Train pool: {X_train.shape[0]:,} rows  |  Test: {X_test.shape[0]:,} rows\n")
 
-# ── Infer cat/num cols from dtype (after cleaning, target already dropped) ────
+# ── Transform Columns ───────────────────────────────────────────────────────────
+# Non-tree  → OHE + PolynomialFeatures(degree=2) + StandardScaler  ✅
+# Tree      → OrdinalEncoding, no scaling                           ✅
+
 cat_cols = X_train.select_dtypes(include='object').columns.tolist()
 num_cols = X_train.select_dtypes(include='number').columns.tolist()
 
-# ── Build pipelines (for loop — every model goes through the same pattern) ────
-# Non-tree  → OHE + PolynomialFeatures(degree=2) + StandardScaler  ✅
-# Tree      → OrdinalEncoding, no scaling                           ✅
 pipelines = {}
 for name, model, is_tree in MODELS:
     pipelines[name] = Pipeline([
-        ("prep",  build_preprocessor(cat_cols, num_cols, is_tree=is_tree)),
+        ("prep",  column_preprocessor(cat_cols, num_cols, is_tree=is_tree)),
         ("model", model),
     ])
 
-# ── K-fold CV: train & compare all candidates ─────────────────────────────────
+# ── K-fold CV ──────────────────────────────────────────────────────────────────
 results, best_name = train_candidates(
     pipelines, X_train, y_train,
     k_folds=K_FOLDS, random_state=RANDOM_STATE,
 )
 
-# ── Tune the best model (random search with live chart) ───────────────────────
+# ── Tune the best model (random search) ───────────────────────────────────────
 best_pipeline, best_params = tune_model(
     pipelines[best_name], best_name,
     X_train, y_train,
