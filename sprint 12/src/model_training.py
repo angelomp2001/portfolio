@@ -5,7 +5,6 @@ import time
 import tracemalloc
 import numpy as np
 import matplotlib.pyplot as plt
-from contextlib import contextmanager
 from datetime import datetime
 from sklearn.base import clone
 from sklearn.model_selection import KFold
@@ -14,59 +13,9 @@ import tensorflow as tf
 from tensorflow import keras
 import joblib
 
-from src import charts
-
 # Suppress TensorFlow info/warning logs
 tf.get_logger().setLevel('ERROR')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-
-# ── Silence helpers ───────────────────────────────────────────────────────────
-_SILENCE = {
-    "LGBMRegressor":     {"verbose": -1},
-    "CatBoostRegressor": {"verbose": 0},
-    "XGBRegressor":      {"verbosity": 0},
-}
-
-
-@contextmanager
-def _devnull():
-    """Redirect Python stdout/stderr to /dev/null within the block."""
-    old_out, old_err = sys.stdout, sys.stderr
-    try:
-        with open(os.devnull, "w") as sink:
-            sys.stdout = sink
-            sys.stderr = sink
-            yield
-    finally:
-        sys.stdout = old_out
-        sys.stderr = old_err
-
-
-# ── Hyperparameter search spaces ──────────────────────────────────────────────
-PARAM_GRIDS = {
-    "LinearRegression":    {},
-    "KerasRegressorWrapper": {},  # tuned via callbacks (early stopping, LR schedule)
-    "LGBMRegressor": {
-        "n_estimators":  list(range(50, 300, 10)),
-        "max_depth":     list(range(2, 10)),
-        "learning_rate": [0.01, 0.05, 0.1, 0.2],
-    },
-    "RandomForestRegressor": {
-        "n_estimators": list(range(50, 300, 10)),
-        "max_depth":    list(range(2, 20)),
-    },
-    "CatBoostRegressor": {
-        "n_estimators":  list(range(50, 200, 5)),
-        "max_depth":     list(range(2, 8)),
-        "learning_rate": [0.01, 0.05, 0.1, 0.2],
-    },
-    "XGBRegressor": {
-        "n_estimators":  list(range(50, 300, 10)),
-        "max_depth":     list(range(2, 10)),
-        "learning_rate": [0.01, 0.05, 0.1, 0.2],
-    },
-}
 
 
 # ── Keras model & wrapper ─────────────────────────────────────────────────────
@@ -160,7 +109,7 @@ class KerasRegressorWrapper:
 
 
 # ── 1. Train & compare all candidates via 5-fold CV ──────────────────────────
-def train_candidates(pipelines, X_train, y_train, k_folds=5, random_state=12345):
+def train_models(pipelines, X_train, y_train, k_folds=5, random_state=12345, metric="rmse"):
     """
     Evaluate each pipeline with KFold(k_folds) CV. ✅
     Tracks train time and peak memory per model. ✅
@@ -171,9 +120,9 @@ def train_candidates(pipelines, X_train, y_train, k_folds=5, random_state=12345)
     # ── Live comparison chart ─────────────────────────────────────────────────
     plt.ion()
     fig_cmp, ax_cmp = plt.subplots(figsize=(10, 6))
-    fig_cmp.patch.set_facecolor(charts.BG)
-    charts.style_axes(ax_cmp, title="Training models…",
-                      xlabel="Mean CV RMSE (lower is better)")
+    lbl_dir = "lower is better" if _lower_is_better(metric) else "higher is better"
+    ax_cmp.set_title("Training models…")
+    ax_cmp.set_xlabel(f"Mean CV {metric.upper()} ({lbl_dir})")
     plt.tight_layout()
     plt.pause(0.05)
 
@@ -181,11 +130,9 @@ def train_candidates(pipelines, X_train, y_train, k_folds=5, random_state=12345)
     names_done  = []
     scores_done = []
     errs_done   = []
-    colors_done = []
 
     for idx, (name, pipeline) in enumerate(pipelines.items()):
-        color = charts.COLORS[idx % len(charts.COLORS)]
-        ax_cmp.set_title(f"Training: {name}…", color=charts.TEXT, fontsize=11)
+        ax_cmp.set_title(f"Training: {name}…")
         fig_cmp.canvas.draw(); fig_cmp.canvas.flush_events(); plt.pause(0.05)
 
         fold_scores = []
@@ -199,11 +146,10 @@ def train_candidates(pipelines, X_train, y_train, k_folds=5, random_state=12345)
             y_fold_vl = y_train.iloc[val_idx]
 
             fold_pipe = clone(pipeline)
-            with _devnull():
-                fold_pipe.fit(X_fold_tr, y_fold_tr)
-                pred = fold_pipe.predict(X_fold_vl)
+            fold_pipe.fit(X_fold_tr, y_fold_tr)
+            pred = fold_pipe.predict(X_fold_vl)
 
-            fold_scores.append(float(np.sqrt(mean_squared_error(y_fold_vl, pred))))
+            fold_scores.append(_calculate_score(y_fold_vl, pred, metric))
 
         train_time = time.time() - t0
         _, peak    = tracemalloc.get_traced_memory()
@@ -223,78 +169,60 @@ def train_candidates(pipelines, X_train, y_train, k_folds=5, random_state=12345)
         names_done.append(name)
         scores_done.append(mean_s)
         errs_done.append(std_s)
-        colors_done.append(color)
 
         # Update live bar chart
         ax_cmp.clear()
-        charts.style_axes(ax_cmp, title="Model Comparison — Mean CV RMSE",
-                          xlabel="RMSE (lower is better)")
-        bars  = ax_cmp.barh(names_done, scores_done, color=colors_done,
-                            edgecolor=charts.BORDER, height=0.5,
-                            xerr=errs_done, error_kw={"ecolor": charts.MUTED, "capsize": 3})
-        span  = max(scores_done) - min(scores_done) if len(scores_done) > 1 else scores_done[0]
-        off   = span * 0.01 if span else scores_done[0] * 0.01
-        for bar, val, err in zip(bars, scores_done, errs_done):
-            ax_cmp.text(bar.get_width() + off,
-                        bar.get_y() + bar.get_height() / 2,
-                        f"{val:,.0f} ±{err:,.0f}",
-                        va="center", ha="left", color=charts.TEXT, fontsize=9)
-        ax_cmp.set_yticks(range(len(names_done)))
-        ax_cmp.set_yticklabels(names_done, color=charts.TEXT, fontsize=9)
+        ax_cmp.set_title(f"Model Comparison — Mean CV {metric.upper()}")
+        ax_cmp.set_xlabel(f"{metric.upper()} ({lbl_dir})")
+        ax_cmp.barh(names_done, scores_done, xerr=errs_done, capsize=3)
         ax_cmp.invert_yaxis()
         plt.tight_layout(); fig_cmp.canvas.draw(); fig_cmp.canvas.flush_events()
         plt.pause(0.1)
 
-    best_name = min(results, key=lambda k: results[k]["score"])
+    best_name = _get_best_model(results, metric)
 
     # Highlight winner
     ax_cmp.clear()
-    charts.style_axes(ax_cmp, title=f"CV Results — Winner: {best_name}",
-                      xlabel="Mean CV RMSE (lower is better)")
-    final_colors = ["#f5a623" if n == best_name else c
-                    for n, c in zip(names_done, colors_done)]
-    bars = ax_cmp.barh(names_done, scores_done, color=final_colors,
-                       edgecolor=charts.BORDER, height=0.5,
-                       xerr=errs_done, error_kw={"ecolor": charts.MUTED, "capsize": 3})
-    span = max(scores_done) - min(scores_done)
-    off  = span * 0.01 if span else scores_done[0] * 0.01
-    for bar, val, err, n in zip(bars, scores_done, errs_done, names_done):
-        label = f"{val:,.0f} ±{err:,.0f}  ← best" if n == best_name else f"{val:,.0f} ±{err:,.0f}"
-        ax_cmp.text(bar.get_width() + off, bar.get_y() + bar.get_height() / 2,
-                    label, va="center", ha="left", color=charts.TEXT, fontsize=9)
-    ax_cmp.set_yticks(range(len(names_done)))
-    ax_cmp.set_yticklabels(names_done, color=charts.TEXT, fontsize=9)
+    ax_cmp.set_title(f"CV Results — Winner: {best_name}")
+    ax_cmp.set_xlabel(f"Mean CV {metric.upper()} ({lbl_dir})")
+    colors = ['orange' if n == best_name else 'tab:blue' for n in names_done]
+    ax_cmp.barh(names_done, scores_done, xerr=errs_done, color=colors, capsize=3)
     ax_cmp.invert_yaxis()
     plt.tight_layout(); fig_cmp.canvas.draw(); fig_cmp.canvas.flush_events()
     plt.ioff(); plt.show(block=False)
 
     # ── Fold-score breakdown chart (training visualization — x=fold) ──────────
-    plot_fold_scores(results)
+    plot_fold_scores(results, metric=metric)
 
     return results, best_name
 
 
-def plot_fold_scores(results):
+def plot_fold_scores(results, metric="rmse"):
     """
-    Plot per-fold RMSE for every model. X-axis = fold index. ✅
+    Plot per-fold score for every model. X-axis = fold index. ✅
     (Training visualization: timeseries — iterations of learning)
     """
     n    = len(results)
-    fig, axes = charts.new_figure(1, n, title="CV Fold Scores per Model",
-                                  figsize=(n * 4, 4))
-    axes_flat = np.array(axes).flatten()
+    fig, axes = plt.subplots(1, n, figsize=(n * 4, 4))
+    fig.suptitle(f"CV Fold {metric.upper()} per Model")
+    
+    # Handle both single plot array and multiplot matrix correctly 
+    if isinstance(axes, np.ndarray):
+        axes_flat = axes.flatten()
+    else:
+        axes_flat = [axes]
 
     for ax, (name, r) in zip(axes_flat, results.items()):
+        fmt = ",.4f" if metric.lower() == "r2" else ",.0f"
         folds = list(range(1, len(r["fold_scores"]) + 1))
-        ax.plot(folds, r["fold_scores"], "o-",
-                color=charts.COLORS[0], linewidth=2, markersize=6)
-        ax.axhline(r["score"], color=charts.COLORS[1],
-                   linestyle="--", linewidth=1.5, label=f"mean={r['score']:,.0f}")
-        charts.style_axes(ax, title=name, xlabel="Fold", ylabel="RMSE")
+        ax.plot(folds, r["fold_scores"], "o-", linewidth=2, markersize=6)
+        mean_str = format(r['score'], fmt)
+        ax.axhline(r["score"], color='orange', linestyle="--", linewidth=1.5, label=f"mean={mean_str}")
+        ax.set_title(name)
+        ax.set_xlabel("Fold")
+        ax.set_ylabel(metric.upper())
         ax.set_xticks(folds)
-        ax.tick_params(colors=charts.MUTED)
-        ax.legend(facecolor=charts.BG, labelcolor=charts.TEXT,
-                  edgecolor=charts.BORDER, fontsize=8)
+        ax.legend(fontsize=8)
 
     plt.tight_layout()
     plt.show(block=False)
@@ -306,30 +234,28 @@ def plot_keras_history(history, name="KerasNN"):
     (Training visualization: timeseries — epochs as time axis)
     """
     fig, ax = plt.subplots(figsize=(10, 4))
-    fig.patch.set_facecolor(charts.BG)
     epochs = range(1, len(history.history['loss']) + 1)
-    ax.plot(epochs, history.history['loss'],     color=charts.COLORS[0], label='Train loss')
-    ax.plot(epochs, history.history['val_loss'], color=charts.COLORS[1],
-            linestyle='--', label='Val loss')
-    charts.style_axes(ax, title=f"{name} — Training Curve",
-                      xlabel="Epoch", ylabel="MSE Loss")
-    ax.legend(facecolor=charts.BG, labelcolor=charts.TEXT, edgecolor=charts.BORDER)
+    ax.plot(epochs, history.history['loss'], label='Train loss')
+    ax.plot(epochs, history.history['val_loss'], linestyle='--', label='Val loss')
+    ax.set_title(f"{name} — Training Curve")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("MSE Loss")
+    ax.legend()
     plt.tight_layout()
     plt.show(block=False)
 
 
 # ── 2. Tune the best model via random search with a live convergence chart ────
-def tune_model(pipeline, model_name, X_train, y_train,
-               n_iter=20, random_state=12345):
+def tune_model(pipeline, model_name, param_grid, X_train, y_train,
+               n_iter=20, random_state=12345, metric="rmse"):
     """
-    Random hyperparameter search over PARAM_GRIDS[model_name].
+    Random hyperparameter search over param_grid.
     Uses a fixed 80/20 validation split of training data for speed.
     Skipped if the model class has no entry or an empty grid.
     Returns (best_pipeline, best_params).
     """
     from sklearn.model_selection import train_test_split as tts
 
-    param_grid = PARAM_GRIDS.get(model_name, {})
     if not param_grid:
         print(f"\n[{model_name}] No hyperparameter grid — skipping tuning.")
         pipeline.fit(X_train, y_train)
@@ -341,55 +267,55 @@ def tune_model(pipeline, model_name, X_train, y_train,
     # ── Live convergence chart ─────────────────────────────────────────────────
     plt.ion()
     fig, ax = plt.subplots(figsize=(10, 5))
-    fig.patch.set_facecolor(charts.BG)
-    charts.style_axes(ax, title=f"{model_name} — Hyperparameter Search",
-                      xlabel="Iteration", ylabel="Validation RMSE")
-    line_trial, = ax.plot([], [], "o", alpha=0.45, color=charts.COLORS[0],
-                          markersize=5, label="RMSE per trial")
-    line_best,  = ax.plot([], [], "-",  color=charts.COLORS[1],
-                          linewidth=2.5, label="Best so far")
-    ax.legend(facecolor=charts.BG, labelcolor=charts.TEXT, edgecolor=charts.BORDER)
+    ax.set_title(f"{model_name} — Hyperparameter Search")
+    ax.set_xlabel("Iteration")
+    ax.set_ylabel(f"Validation {metric.upper()}")
+    line_trial, = ax.plot([], [], "o", alpha=0.45, markersize=5, label=f"{metric.upper()} per trial")
+    line_best,  = ax.plot([], [], "-", linewidth=2.5, label="Best so far")
+    ax.legend()
     plt.tight_layout(); plt.pause(0.05)
 
     rng        = np.random.default_rng(random_state)
     param_keys = list(param_grid.keys())
-    best_rmse   = np.inf
+    best_score   = np.inf if _lower_is_better(metric) else -np.inf
     best_params = {}
     best_pipe   = pipeline
-    xs, trial_rmses, best_curve = [], [], []
+    xs, trial_scores, best_curve = [], [], []
 
     for i in range(1, n_iter + 1):
         params   = {k: rng.choice(param_grid[k]).item() for k in param_keys}
-        silence  = _SILENCE.get(model_name, {})
-        pipe_kw  = {f"model__{k}": v for k, v in {**silence, **params}.items()}
+        pipe_kw  = {f"model__{k}": v for k, v in params.items()}
         candidate = clone(pipeline)
         candidate.set_params(**pipe_kw)
 
-        with _devnull():
-            candidate.fit(X_tr, y_tr)
-            pred = candidate.predict(X_vl)
-        rmse = float(np.sqrt(mean_squared_error(y_vl, pred)))
+        candidate.fit(X_tr, y_tr)
+        pred = candidate.predict(X_vl)
+        score = _calculate_score(y_vl, pred, metric)
 
-        if rmse < best_rmse:
-            best_rmse, best_params, best_pipe = rmse, params, candidate
+        if _is_better(score, best_score, metric):
+            best_score = score
+            best_params = params
+            best_pipe = candidate
 
-        xs.append(i); trial_rmses.append(rmse); best_curve.append(best_rmse)
-        line_trial.set_data(xs, trial_rmses)
+        xs.append(i); trial_scores.append(score); best_curve.append(best_score)
+        line_trial.set_data(xs, trial_scores)
         line_best.set_data(xs, best_curve)
         ax.relim(); ax.autoscale_view()
-        ax.set_title(f"{model_name} — iter {i}/{n_iter}  "
-                     f"best RMSE={best_rmse:,.0f}  params={best_params}",
-                     color=charts.TEXT, fontsize=9)
+        ax.set_title(f"{model_name} — iter {i}/{n_iter}  best {metric.upper()}={best_score:,.4f}")
         fig.canvas.draw(); fig.canvas.flush_events(); plt.pause(0.001)
 
     plt.ioff(); plt.show(block=False)
 
     print(f"[{model_name}] Best params:          {best_params}")
-    print(f"[{model_name}] Best validation RMSE: {best_rmse:,.0f}")
+    print(f"[{model_name}] Best validation {metric.upper()}: {best_score:,.4f}")
 
     # Re-fit winner on full training data
-    with _devnull():
-        best_pipe.fit(X_train, y_train)
+    best_pipe.fit(X_train, y_train)
+
+    # Plot Keras training curve if the winner is a Neural Network
+    final_step = best_pipe.steps[-1][1]
+    if hasattr(final_step, 'history_') and final_step.history_ is not None:
+        plot_keras_history(final_step.history_, name=model_name)
 
     return best_pipe, best_params
 
@@ -451,15 +377,15 @@ def save_best_model(pipeline, name, params, metrics, out_dir="models"):
 
 
 # ── 5. Print summary ──────────────────────────────────────────────────────────
-def print_summary(results, best_name, best_params, test_metrics):
+def print_summary(results, best_name, best_params, test_metrics, metric="rmse"):
     """Print CV comparison table and final test metrics."""
     print("\n" + "=" * 72)
     print("  MODEL COMPARISON SUMMARY  (5-fold CV)")
     print("=" * 72)
     for name, r in results.items():
         marker = "  ← best" if name == best_name else ""
-        print(f"  {name:<26} CV RMSE={r['score']:>10,.2f}"
-              f"  ±{np.std(r['fold_scores']):>6,.0f}"
+        print(f"  {name:<26} CV {metric.upper()}={r['score']:>10,.4f}"
+              f"  ±{np.std(r['fold_scores']):>6,.4f}"
               f"  train={r['train_time']:.1f}s"
               f"  mem={r['peak_mem_mb']:.1f}MB"
               f"{marker}")
@@ -475,3 +401,35 @@ def print_summary(results, best_name, best_params, test_metrics):
         print(f"  [{best_name}] Best params: {formatted}")
 
     print("=" * 72)
+
+
+# ── Metric Helpers ────────────────────────────────────────────────────────────
+def _lower_is_better(metric):
+    """Returns True if a lower score indicates a better model."""
+    return metric.lower() in ['rmse', 'mse', 'mae']
+
+def _is_better(score, best_score, metric):
+    """Returns True if score is strictly better than best_score."""
+    if _lower_is_better(metric):
+        return score < best_score
+    return score > best_score
+
+def _get_best_model(results, metric):
+    """Pick the model with the best cv score based on the chosen metric."""
+    if _lower_is_better(metric):
+        return min(results, key=lambda k: results[k]["score"])
+    return max(results, key=lambda k: results[k]["score"])
+
+def _calculate_score(y_true, y_pred, metric):
+    """Compute score based on metric string."""
+    m = metric.lower()
+    if m == "rmse":
+        return float(np.sqrt(mean_squared_error(y_true, y_pred)))
+    elif m == "mse":
+        return float(mean_squared_error(y_true, y_pred))
+    elif m == "mae":
+        return float(mean_absolute_error(y_true, y_pred))
+    elif m == "r2":
+        return float(r2_score(y_true, y_pred))
+    else:
+        raise ValueError(f"Unsupported metric: {metric}")

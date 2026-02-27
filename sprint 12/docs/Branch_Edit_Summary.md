@@ -1,15 +1,21 @@
-# Branch Edit Summary — EXP-014-Refactor-Preprocessor
+# Branch Edit Summary — EXP-015-Improve-Readability
 
 ## Summary
-Refactored the `data_preprocessing.py` script to inline the pipeline for numerical models inside the `ColumnTransformer`. The user also added several explanatory inline comments to the preprocessing steps to detail the behavior of the `OrdinalEncoder`, `OneHotEncoder`, `StandardScaler`, and `PolynomialFeatures` blocks.
+Refactored the visualization scripts and overall project structure to decouple visualization functions from the central `charts.py` style configuration module and simplified live testing logic by dropping convoluted `matplotlib` tweaks. 
 
 ---
 
 ## Files Modified
 
 ### `src/data_preprocessing.py`
-- Inlined the numerical pipeline variable directly into the `ColumnTransformer` under the `else` block for linear/NN models to reduce the number of discrete code blocks.
-- Added various inline comments to detail step-by-step logic, specifically explaining why we split columns (`ColumnTransformer`), and describing how each component processes the data (`OrdinalEncoder` unknown value handling, `StandardScaler`, and `PolynomialFeatures`).
+- Self-contained the styling layout rules inside `generate_distribution_figure` and `save_figure` functions, making them independent. 
+- Stripped unnecessary visualization settings from `generate_distribution_figure()`, falling back directly to generic minimalist rules for `matplotlib` defaults.
 
-### `main.py`
-- Triggered metrics logging to properly save results in the latest format.
+### `src/model_training.py`
+- Integrated variables for charts inside the file natively (`_BG`, `_PANEL`, `_TEXT`, `_MUTED`, `_BORDER`, `_COLORS`).
+- Pulled helper functions (`_style_axes` and `_new_figure`) into the file so they are contained naturally instead of looking outwardly to `charts.py`.
+- Replaced the `train_models` interactive tracking visualizer loops with minimalist `matplotlib` logic while removing custom highlights and `matplotlib` manipulations for complex layout text updates.
+- Deleted `_devnull` and `_SILENCE` logic, stopping suppression of training messages.
+
+### `src/charts.py`
+- Completely deleted the `charts.py` file due to zero dependencies left on it across the program. 

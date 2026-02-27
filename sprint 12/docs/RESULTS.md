@@ -1,11 +1,13 @@
-# RESULTS — EXP-014
+# RESULTS — EXP-015
 
-**Branch:** `experiments/EXP-014-Refactor-Preprocessor`  
-**Goal:** Inline the numerical preprocessing pipeline and add inline documentation comments.
+**Branch:** `experiments/EXP-015-Improve-Readability`  
+**Goal:** Remove dependencies on `charts.py` and implement minimalist self-contained plotting variables/functions directly in `data_preprocessing.py` and `model_training.py` while cleaning out `_devnull` and `_SILENCE` logic. 
 
 ## Changes Made
-- Inlined the `num_pipeline` variable natively into the `ColumnTransformer`.
-- Added developer inline comments to detail step-by-step logic during preprocessing.
+- Decoupled visualization helpers. `generate_distribution_figure` uses minimalist standard configurations, and `model_training.py` relies on file-level specific plot rendering configurations. 
+- Deleted `src/charts.py`.
+- Dropped complex real-time annotation plotting tricks in `model_training` CV output window.
+- Dropped output suppression commands `_devnull` and `_SILENCE`. 
 
 ## Model Results (5-fold CV → best model tuned → test evaluation)
 
@@ -20,4 +22,4 @@
 | R²     | 0.8177    |
 | Pred time | ~0.004s |
 
-**Comparison:** No change directly to model performance since this was a pure code refactoring and pipeline abstraction exercise without modifying mathematical properties.
+**Comparison:** No change directly to model performance since this was a pure code refactoring, styling, and pipeline abstraction exercise without modifying mathematical properties.

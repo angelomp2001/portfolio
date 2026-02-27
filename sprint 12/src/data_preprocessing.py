@@ -9,8 +9,6 @@ from sklearn.preprocessing import (OneHotEncoder, OrdinalEncoder,
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 
-from src import charts
-
 
 # ── Load ──────────────────────────────────────────────────────────────────────
 def load_data(path):
@@ -28,6 +26,7 @@ def clean_data(df, target_col='Price', cols_to_drop=None,
     Cat/num column lists are NOT passed in — callers infer them from
     dtype on the cleaned data instead.
     """
+    # drop irrelevant columns
     if cols_to_drop is None:
         cols_to_drop = []
 
@@ -37,20 +36,21 @@ def clean_data(df, target_col='Price', cols_to_drop=None,
     # Price: values below minimum are invalid
     df[target_col] = np.where(df[target_col] >= price_min, df[target_col], np.nan)
 
-    # RegistrationYear: sentinel 0 for out-of-range (keeps row)
+    # RegistrationYear: out-of-range → NaN (row dropped at dropna)
     df['RegistrationYear'] = df['RegistrationYear'].where(
         (df['RegistrationYear'] >= year_min) & (df['RegistrationYear'] <= year_max)
-    ).fillna(0)
+    )
 
     # Power: out-of-range → NaN (row dropped at dropna)
     df['Power'] = df['Power'].where(
         (df['Power'] >= power_min) & (df['Power'] <= power_max)
     )
 
-    # Categorical NaN → explicit 'missing' category (inferred from dtype)
+    # Categorical missing: NaN → 'missing'
     for col in df.select_dtypes(include='object').columns:
         df[col] = df[col].fillna('missing')
 
+    # drop duplicates and dropna
     df.drop_duplicates(inplace=True)
     df.dropna(inplace=True)
     return df
@@ -70,6 +70,7 @@ def column_preprocessor(cat_cols, num_cols, is_tree=False):
         Categorical → OrdinalEncoder   (handles high cardinality efficiently)
         Numeric     → passthrough       (tree models don't need scaling)
     """
+    # preprocess based on model type
     if is_tree:
         # Apply to tree models
         return ColumnTransformer([ # split cat and num columns and runs parallel processes
@@ -90,40 +91,75 @@ def column_preprocessor(cat_cols, num_cols, is_tree=False):
 
 
 # ── Visualize data ────────────────────────────────────────────────────────────
-def visualize_data(df, label, out_path):
+def generate_distribution_figure(df, label):
     """
-    Plot histograms for numeric columns and bar charts for categorical ones.
-    Saves to out_path. Reusable for both raw and clean data. ✅
+    Generate minimal distribution plots for all columns in a dataset.
+    - Numeric columns: Visualized using histograms
+    - Categorical columns: Visualized using horizontal bar charts (top 10 categories)
+    
+    This function is reusable for both raw and cleaned data. ✅
     """
+    TOP_N_CATEGORIES = 10
+
+    # 1. Identify column types to determine the appropriate plot type
     num_cols = df.select_dtypes(include='number').columns.tolist()
     cat_cols = df.select_dtypes(include='object').columns.tolist()
     all_cols = num_cols + cat_cols
 
-    ncols = 4
-    nrows = max(1, (len(all_cols) + ncols - 1) // ncols)
-    fig, axes = charts.new_figure(nrows, ncols, title=f"{label} Data — Distributions",
-                                  figsize=(ncols * 4, nrows * 3))
+    # 2. Set up a grid layout for the subplots
+    ncols = 4 # We want 4 plots per row
+    nrows = max(1, (len(all_cols) + ncols - 1) // ncols) # Calculate the number of rows needed to fit all columns
+    
+    # 3. Create the main figure and the subplots
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4, nrows * 3))
+    fig.suptitle(f"{label} Data — Distributions", fontsize=13, y=1.01)
+    
+    # Flatten the 2D array of axes into a 1D array for easier iteration
     axes_flat = np.array(axes).flatten()
 
+    # 4. Iterate through all columns and plot the data
     for i, col in enumerate(all_cols):
-        ax = axes_flat[i]
+        ax = axes_flat[i] # Get the specific subplot for this column
+        
+        # For numeric data: plot a histogram (removing NaN values first)
         if col in num_cols:
-            ax.hist(df[col].dropna(), bins=30,
-                    color=charts.COLORS[0], edgecolor=charts.BORDER)
-            charts.style_axes(ax, title=col, xlabel=col, ylabel='Count')
+            # plot a histogram
+            ax.hist(df[col].dropna(), bins=30)
+            # style the axes
+            ax.set_title(col, fontsize=10, pad=6)
+            ax.set_xlabel(col, fontsize=9)
+            ax.set_ylabel('Count', fontsize=9)
+        
+        # For categorical data: get the top N most frequent categories
         else:
-            vc = df[col].value_counts().head(10)
-            ax.barh(vc.index[::-1], vc.values[::-1],
-                    color=charts.COLORS[1], edgecolor=charts.BORDER)
-            charts.style_axes(ax, title=col, xlabel='Count')
-            ax.tick_params(axis='y', labelsize=7)
+            # get the top N most frequent categories
+            vc = df[col].value_counts().head(TOP_N_CATEGORIES)
+            # plot a horizontal bar chart (reversing order to show largest at top)
+            ax.barh(vc.index[::-1], vc.values[::-1])
+            # style the axes
+            ax.set_title(col, fontsize=10, pad=6)
+            ax.set_xlabel('Count', fontsize=9)
+            # make category labels slightly smaller
+            ax.tick_params(axis='y', labelsize=7) 
 
+    # 5. Hide extra unused subplots
     for j in range(len(all_cols), len(axes_flat)):
         axes_flat[j].set_visible(False)
 
+    # 6. Adjust layout so plots do not overlap
     plt.tight_layout()
+    
+    return fig
+
+
+# ── Save figure ───────────────────────────────────────────────────────────────
+def save_figure(fig, label, out_path):
+    """Save a Matplotlib figure to disk and close it."""
+    # make sure the directory exists
     os.makedirs(os.path.dirname(out_path) or '.', exist_ok=True)
-    fig.savefig(out_path, bbox_inches='tight', facecolor=charts.BG, dpi=100)
+    # save the figure
+    fig.savefig(out_path, bbox_inches='tight', facecolor="#1a1a2e", dpi=100)
+    # close the figure
     plt.close(fig)
     print(f"[viz]   Saved {label} visualization → {out_path}")
 
@@ -134,6 +170,7 @@ def save_data_stats(df, path, label="data"):
     Compute and save descriptive statistics for a DataFrame to a JSON file.
     Call on both raw and clean data to enable data drift tracking across runs. ✅
     """
+    # create a dictionary to store the statistics
     stats = {
         "label":     label,
         "timestamp": datetime.now().isoformat(),
@@ -141,6 +178,7 @@ def save_data_stats(df, path, label="data"):
         "columns":   {},
     }
 
+    # iterate through columns and compute statistics
     for col in df.columns:
         col_stats = {
             "dtype":        str(df[col].dtype),
@@ -160,13 +198,17 @@ def save_data_stats(df, path, label="data"):
             })
         else:
             top = df[col].mode()
-            col_stats["top_value"] = str(top.iloc[0]) if not top.empty else None
-
+            col_stats["mode"] = str(top.iloc[0]) if not top.empty else None
+        # store the statistics
         stats["columns"][col] = col_stats
 
+    # make sure the directory exists
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    
+    # save the statistics
     with open(path, "w") as f:
         json.dump(stats, f, indent=2)
-
+    
+    # print the statistics
     print(f"[stats] Saved {label} statistics → {path}  "
           f"({df.shape[0]:,} rows × {df.shape[1]} cols)")
