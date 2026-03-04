@@ -1,21 +1,26 @@
-# Branch Edit Summary — EXP-015-Improve-Readability
+# Branch Edit Summary — EXP-016-Create-API
 
 ## Summary
-Refactored the visualization scripts and overall project structure to decouple visualization functions from the central `charts.py` style configuration module and simplified live testing logic by dropping convoluted `matplotlib` tweaks. 
+Created a FastAPI application (`api.py`) to serve the best trained regression model to an endpoint (`/predict`). Included input parsing using Pydantic, execution logging, and basic prediction output. Updated project documentation to include FastAPI startup instructions and marked the task off the checklist.
 
 ---
 
 ## Files Modified
 
-### `src/data_preprocessing.py`
-- Self-contained the styling layout rules inside `generate_distribution_figure` and `save_figure` functions, making them independent. 
-- Stripped unnecessary visualization settings from `generate_distribution_figure()`, falling back directly to generic minimalist rules for `matplotlib` defaults.
+### `api.py` (New File)
+- Implemented `FastAPI` app.
+- Loaded global `best_model.joblib` pipeline at startup with fallback handling.
+- Implemented `/predict` POST endpoint to convert the JSON payload into a pandas DataFrame.
+- Implemented an `api_inference_logs.jsonl` system to log inputs and outputs.
+- Developed `/health` route for status checks.
 
-### `src/model_training.py`
-- Integrated variables for charts inside the file natively (`_BG`, `_PANEL`, `_TEXT`, `_MUTED`, `_BORDER`, `_COLORS`).
-- Pulled helper functions (`_style_axes` and `_new_figure`) into the file so they are contained naturally instead of looking outwardly to `charts.py`.
-- Replaced the `train_models` interactive tracking visualizer loops with minimalist `matplotlib` logic while removing custom highlights and `matplotlib` manipulations for complex layout text updates.
-- Deleted `_devnull` and `_SILENCE` logic, stopping suppression of training messages.
+### `README.md`
+- Appended `api.py` into the project directory tree.
+- Appended `fastapi`, `uvicorn`, and `pydantic` into the required dependencies list.
+- Added bash startup instructions (`uvicorn api:app --reload`).
 
-### `src/charts.py`
-- Completely deleted the `charts.py` file due to zero dependencies left on it across the program. 
+### `docs/checklist.md`
+- Marked the API creation task as complete (`[✅]`).
+
+### `requirements.txt`
+- Appended `fastapi>=0.111.0`, `uvicorn>=0.30.0`, and `pydantic>=2.7.0`.

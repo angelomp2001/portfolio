@@ -11,3 +11,4 @@ See `experiment_log.md` for merged results and `RESULTS.md` for the current bran
 | EXP-004 | experiments/EXP-004-Complete-Checklist | Add Keras NN, 5-fold CV, sklearn Pipelines, PolynomialFeatures, visualizations, multi-metric eval, peak memory tracking, model saving | ✅ | 2,195.02 |
 | EXP-005 | experiments/EXP-005-Improve-Readability | Refining project structure, using train_test_split natively, renamed parameters, commented out classifier models, and inferred dtype logic. | ✅ | 2,094.39 |
 | EXP-014 | experiments/EXP-014-Refactor-Preprocessor | Inline the numerical preprocessing pipeline into ColumnTransformer and adding step-by-step documentation inline. | ✅ | 2,094.39 |
+| EXP-016 | experiments/EXP-016-Create-API | Create FastAPI server `api.py` serving inference to `/predict` using Pydantic schema validation and JSON logging. | ✅ | — |

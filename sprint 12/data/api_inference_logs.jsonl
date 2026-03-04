@@ -1,0 +1,1 @@
+{"timestamp": "2026-03-04T13:45:23.139694", "input": {"VehicleType": "suv", "RegistrationYear": 2004.0, "Gearbox": "auto", "Power": 163.0, "Model": "grand", "Mileage": 125000, "FuelType": "gasoline", "Brand": "jeep", "NotRepaired": "no"}, "prediction": 6517.962523919855}

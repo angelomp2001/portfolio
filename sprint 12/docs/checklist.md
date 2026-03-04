@@ -27,5 +27,5 @@ Project Checklist:
 [✅] Model checkpoints (Keras: ModelCheckpoint saves best epoch on final fit)
 [✅] Learning rate adaptation (Keras: ReduceLROnPlateau factor=0.5, patience=7)
 [✅] Save best model (joblib for sklearn pipelines, .keras for NN)
-[  ] API: load best model, run inference, log and save run and results
+[✅] API: load best model, run inference, log and save run and results
 [  ] Unit testable
