@@ -1,6 +1,0 @@
-﻿commit 26b3204b611155b1a0b03020cfdff0af2314dd85
-Merge: aa365e8 8c48230
-Author: angelomp2001 <apassala@gmail.com>
-Date:   Mon Mar 9 18:46:12 2026 -0500
-
-    Merge branch 'experiments/EXP-001-Finalize-Structure-Readme'
