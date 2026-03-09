@@ -62,13 +62,3 @@ uvicorn api:app --reload
 5. **Train** — Fit LinearRegression, LGBM, RandomForest, CatBoost, XGBoost
 6. **Evaluate** — Compare RMSE, train time, prediction time across models
 7. **Tune** — Hyperparameter search on best model (CatBoost `max_depth`)
-
-## Experiment Workflow
-See [`docs/agent_readme.md`](docs/agent_readme.md) for the full branching and logging protocol.  
-Tracking files live in `docs/`: `EXPERIMENTS.md`, `RESULTS.md`, `Branch_Edit_Summary.md`, `experiment_log.md`.
-
-## Dependencies
-- `pandas`, `numpy`, `scikit-learn`
-- `lightgbm`, `catboost`, `xgboost`
-- `matplotlib`, `seaborn`
-- `fastapi`, `uvicorn`, `pydantic`
