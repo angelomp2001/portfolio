@@ -1,24 +1,23 @@
-
-# EXP-011: Sprint 11 Readme & Code Refactor
+# EXP-012: Update Readme
 
 **Status**: ✅ Success
-**Date**: 2026-02-19
+**Date**: 2026-03-08
 
 ## Summary
-Refactored `main.py` to clarify objectives, fix regression target logic, improve code quality, and generate clean, comparable outputs for all objectives. Organized project structure by moving documentation to `docs/`.
+Updated `README.md` to accurately reflect the mathematical and privacy/obfuscation focus of Sprint 11, instead of the generic boilerplate template.
 
 ## Key Changes
-1.  **Project Structure**:
-    *   Created `docs/` folder.
-    *   Moved `agent_readme.md`, `experiment_log.md`, `RESULTS.md` to `docs/`.
-2.  **Code Improvements (`main.py` & `src/data_preprocessing.py`)**:
-    *   **Objective 1 (Customer Similarity)**: Implemented `get_knn` demo in `main.py` that excludes self-match and displays ORIGINAL values (not scaled).
-    *   **Objective 2 (Classification)**: Fixed `F1 Score` calculation by ensuring target column passed to `data_preprocessor` is the binary one.
-    *   **Objective 3 (Regression)**: Fixed logic to use CONTINUOUS target (`insurance_benefits`) instead of binary. Added clean comparison table for Unscaled vs Scaled.
-    *   **Objective 4 (Obfuscation)**: Added clean comparison table for Original vs Obfuscated performance.
-    *   **General**: Removed duplicate code, fixed `FutureWarning` in scaler, and added a shared `split_random_state` variable.
+1.  **Project Structure Updates**:
+    *   Removed mentions of non-existent files like `app.py` and `catboost_info/` from the folder structure.
+    *   Replaced `eda.ipynb` with the actual file name `project_11.ipynb`.
+    *   Updated the `src` directory references to mirror the actual contents correctly (`demo_logic.py`, `data_preprocessing.py`).
+2.  **API References Update**:
+    *   Left the headings intact (e.g. "How to run inference via API" and "API Overview") to comply with the project template, but added explicit notes stating that a live inference API is not built or used for this demonstration.
+3.  **Pipeline Overview Adjustments**:
+    *   Replaced the boilerplate pipeline flow with standard steps that reflect what `main.py` is doing. Specifically, added steps detailing the loading of scaling, searching for similar users via KNN, applying Linear Regression across scaled and non-scaled data, and the Obfuscation Proof via matrix multiplication.
+4.  **Training Instructions Fix**:
+    *   Updated the `main.py` execution instructions to note the presence of an `--eda` flag.
 
 ## Results
-See `docs/RESULTS.md` for the full output.
-*   **Classification**: Scaled data significantly outperforms Unscaled (F1 ~0.97 vs ~0.60).
-*   **Regression**: Scaling has no effect on performance (RMSE 0.34, R2 0.43), but Obfuscation is proven to yield identical results to original data.
+See `docs/RESULTS.md` for output logs regarding script-based evaluations.
+The README is now accurate and removes false promises of an inference API while maintaining the required template sections.
