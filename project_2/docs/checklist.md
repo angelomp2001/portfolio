@@ -1,0 +1,34 @@
+- [✓] Global random seed
+- [X] Parameter grid
+- [X] Hyperparameter grid
+- [✓] Save raw data statistics
+- [✓] Sampling (optional)
+- [✓] Visualize raw data: histogram/bar chart
+- [✓] Label numeric categorical and time data
+- [X] Label target
+- [X] Evaluation Metrics: MAE, MSE, RMSE, R2, Accuracy, Precision, recall, F1, Confusion matrix, ROC AUC, PR AUC, Log loss
+- [X] Time data as datetime
+- [✓] Feature engineer datetime: hour/day/month/weekday/lag features
+- [X] Apply PolynomialFeatures
+- [✓] Clean data distribution
+- [✓] Clean data visualizations: univariate, bivariate, timeseries
+- [✓] Save clean data statistics
+- [X] Training visualizations: timeseries
+- [X] training statistics: duration, Max memory usage, CPU/GPU utilization
+- [X] RandomizedSearch
+- [X] Cross validation with holdout: KFold, StratifiedKFold, TimeSeriesSplit
+- [X] Pipeline
+- [X] Leakage-safe Encoding: Ordinal for tree, OHE otherwise
+- [X] Feature scaling: Min/max for bounded values, standardization otherwise. 
+- [X] Early Stopping parameters
+- [X] Dropout parameter
+- [X] Model checkpoints
+- [X] Learning rate adaptation
+- [X] Save best model
+- [X] API: load best model, run inference, log and save run and results
+- [✓] Unit testable
+- [X] Random Forest: Illustrate feature importance
+- [X] Decision Tree: visual of the decision tree model
+- [X] Component diagram (DAG) .py file (Component Diagram.  It is a directed acyclic Graph (DAG). If not, make it DAG.  Move the code to change the direction of dependency. You first build modules, then later organize them by components.  Design component dependency diagram when dependency becomes a problem)
+- [✓] Handle missing values
+- [✓] Remove duplicates
