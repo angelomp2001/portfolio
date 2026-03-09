@@ -1,7 +1,13 @@
 '''
 Provide insights into the shopping habits of Instacart customers
 '''
-from src.data_preprocessing import load_data, fill_missing, remove_duplicates, verify_data
+import numpy as np
+import random
+from src.config import RANDOM_SEED
+from src.data_preprocessing import (
+    load_data, fill_missing, remove_duplicates, verify_data,
+    save_statistics, label_categorical, engineer_datetime_features
+)
 from src.analysis import (
     difference_in_order_hours,
     plot_orders_per_customer,
@@ -12,6 +18,9 @@ from src.analysis import (
 )
 
 def main():
+    # apply global random seed
+    np.random.seed(RANDOM_SEED)
+    random.seed(RANDOM_SEED)
     # data path
     orders_path = 'data/instacart_orders.csv'
     products_path = 'data/products.csv'
@@ -19,13 +28,17 @@ def main():
     aisles_path = 'data/aisles.csv'
     order_products_path = 'data/order_products.csv'
 
-    # load data
+    # load data (using a 10% sample to speed up EDA, optional)
     print("Loading data...")
-    orders = load_data(orders_path)
+    orders = load_data(orders_path, sample_frac=0.1, random_state=RANDOM_SEED)
     products = load_data(products_path)
     departments = load_data(departments_path)
     aisles = load_data(aisles_path)
-    order_products = load_data(order_products_path)
+    order_products = load_data(order_products_path, sample_frac=0.1, random_state=RANDOM_SEED)
+
+    # raw data statistics extraction
+    print("Saving raw data statistics...")
+    save_statistics(orders, "raw_orders")
 
     # fill missing values
     print("Handling missing values...")
@@ -39,6 +52,18 @@ def main():
     departments = remove_duplicates(departments)
     aisles = remove_duplicates(aisles)
     order_products = remove_duplicates(order_products)
+
+    # label categorical variables
+    print("Labeling numerical categorical data...")
+    orders = label_categorical(orders, ['order_dow'])
+    
+    # feature engineering datetime variables
+    print("Feature engineering datetime variables...")
+    orders = engineer_datetime_features(orders)
+
+    # save clean data statistics
+    print("Saving clean data statistics...")
+    save_statistics(orders, "clean_orders")
 
     # verify that col values make sense
     print("Verifying data...")

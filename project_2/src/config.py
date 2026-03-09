@@ -10,3 +10,6 @@ products_path = data_dir / 'products.csv'
 departments_path = data_dir / 'departments.csv'
 aisles_path = data_dir / 'aisles.csv'
 order_products_path = data_dir / 'order_products.csv'
+
+# Global random seed
+RANDOM_SEED = 42

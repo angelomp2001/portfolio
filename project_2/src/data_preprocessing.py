@@ -1,8 +1,40 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def load_data(path):
-    return pd.read_csv(path, sep=';')
+import os
+
+def load_data(path, sample_frac=None, random_state=None):
+    df = pd.read_csv(path, sep=';')
+    if sample_frac is not None:
+        df = df.sample(frac=sample_frac, random_state=random_state)
+        print(f"Sampled {sample_frac*100}% of data from {path} (random state {random_state})")
+    return df
+
+def save_statistics(df, prefix, save_dir='data'):
+    os.makedirs(save_dir, exist_ok=True)
+    stats = df.describe(include='all')
+    stats.to_csv(f"{save_dir}/{prefix}_stats.csv")
+    print(f"Saved {prefix} statistics to {save_dir}/{prefix}_stats.csv")
+
+def label_categorical(df, cols):
+    for col in cols:
+        if col in df.columns:
+            df[col] = df[col].astype('category')
+            print(f"Converted '{col}' to categorical.")
+    return df
+
+def engineer_datetime_features(df):
+    if 'order_dow' in df.columns:
+        # Based on data output, 0 and 1 are highest so it's Sunday and Monday.
+        # Weekends are commonly 0 (Sunday) and 6 (Saturday)
+        df['is_weekend'] = df['order_dow'].isin([0, 6]).astype(int)
+        print("Engineered 'is_weekend' feature from 'order_dow'.")
+    if 'order_hour_of_day' in df.columns:
+        # Create a boolean feature if order is placed during morning hours
+        df['is_morning_order'] = ((df['order_hour_of_day'] >= 6) & (df['order_hour_of_day'] < 12)).astype(int)
+        print("Engineered 'is_morning_order' feature from 'order_hour_of_day'.")
+    return df
+
 
 def fill_missing(column):
     if column.dtype == 'object':
