@@ -1,0 +1,10 @@
+﻿62dd6cc EXP-001: ✅ Structural alignment and checklist update
+726e8c9 deleted out.txt
+a5fbd23 deleted out.txt
+a8ea840 Include sprint 12 README updates in the EXP-001 finalized scope
+26b3204 Merge branch 'experiments/EXP-001-Finalize-Structure-Readme'
+aa365e8 EXP-001: ✅ Finalize project structure, checklist template, and implement baseline features
+8c48230 EXP-001: ✅ Finalize project structure, checklist template, and implement baseline features
+90e4e8e Merge branch 'experiments/EXP-012-Update-Readme'
+4f709c2 EXP-012: ✅ Updated experiment log
+214280c EXP-012: ✅ Appended experiment log
