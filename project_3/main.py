@@ -1,14 +1,18 @@
 # Loading all the libraries	
 import matplotlib.pyplot as plt
 from scipy import stats as st
+import numpy as np
+
+# Global random seed
+np.random.seed(42)
 
 from src.data_preprocessing import load_all_data, inspect_initial_data, view_raw_df, append_datetime_features
 from src.data_preprocessing import set_datatype, fill_missing, deduplicate
 from src.data_preprocessing import prepare_data_types, handle_missing_values, remove_duplicates, enrich_data
 from src.data_preprocessing import n_monthly_calls, n_monthly_messages, n_monthly_internet, monthly_revenue, sum_plan_revenue, mean_plan_revenue, plot_revenue, monthly_minutes_by_plan
 
-# Load the data files into different DataFrames
-dfs = load_all_data()
+# Load the data files into different DataFrames (can add sample_frac=0.1 for huge datasets)
+dfs = load_all_data(sample_frac=None)
 inspect_initial_data(dfs)
 
 # Process data (Fix types, fill missing, deduplicate, enrich)
@@ -16,6 +20,15 @@ dfs = prepare_data_types(dfs)
 dfs = handle_missing_values(dfs)
 dfs = remove_duplicates(dfs)
 dfs = enrich_data(dfs)
+
+# Save clean data statistics
+from src.data_preprocessing import df_to_markdown
+clean_stats = view_raw_df(dfs)
+with open('docs/data_statistics.md', 'a') as f:
+    f.write("# Clean Data Statistics\n")
+    f.write(df_to_markdown(clean_stats))
+    f.write("\n\n")
+clean_stats.to_csv('data/clean_data_stats.csv', index=False)
 
 # Unpack DataFrames for further processing
 calls_df = dfs['calls_df']
@@ -25,28 +38,28 @@ plans_df = dfs['plans_df']
 users_df = dfs['users_df']
 
 # Print the general/summary information about the users' DataFrame
-view_raw_df(users_df)
+print(view_raw_df(users_df))
 
 # Print a sample of data for users
-users_df.sample(5, random_state = 1)
+print(users_df.sample(5))
 
 # Print the general/summary information about the calls' DataFrame
-view_raw_df(calls_df)
+print(view_raw_df(calls_df))
 
 # Print a sample of data for calls
-calls_df.sample(5, random_state = 1)
+print(calls_df.sample(5))
 
 # Print the general/summary information about the messages' DataFrame
-view_raw_df(messages_df)
+print(view_raw_df(messages_df))
 
 # Print a sample of data for messages
-messages_df.sample(5, random_state = 1)
+print(messages_df.sample(5))
 
 # Print the general/summary information about the internet DataFrame
-view_raw_df(internet_df)
+print(view_raw_df(internet_df))
 
 # Print a sample of data for the internet traffic
-internet_df.sample(5, random_state = 1)
+print(internet_df.sample(5))
 
 # Print out the plan conditions and make sure they are clear for you
 print(plans_df)
