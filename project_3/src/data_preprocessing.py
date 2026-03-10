@@ -8,25 +8,67 @@ from src.config import calls, internet, messages, plans, users
 def load_data(path):
     return pd.read_csv(path)
 
-def load_all_data():
-    return {
+def load_all_data(sample_frac=None):
+    dfs = {
         'calls_df': load_data(calls),
         'internet_df': load_data(internet),
         'messages_df': load_data(messages),
         'plans_df': load_data(plans),
         'users_df': load_data(users)
     }
+    if sample_frac:
+        for k in dfs:
+            if k != 'plans_df':
+                dfs[k] = dfs[k].sample(frac=sample_frac, random_state=42)
+    return dfs
+
+def df_to_markdown(df):
+    header = "| " + " | ".join(map(str, df.columns)) + " |"
+    divider = "|" + "|".join(["---"] * len(df.columns)) + "|"
+    rows = []
+    for _, row in df.iterrows():
+        rows.append("| " + " | ".join(str(x) for x in row) + " |")
+    return "\n".join([header, divider] + rows)
+
+def visualize_raw_data(dfs):
+    print("Visualizing raw numeric data distributions:")
+    for df_name, df in dfs.items():
+        if df_name == 'plans_df': continue
+        nums = df.select_dtypes(include=[np.number])
+        if nums.columns.size > 0:
+            for col in nums:
+                if 'id' not in col.lower():
+                    plt.figure(figsize=(4,3))
+                    df[col].hist(bins=30)
+                    plt.title(f"{df_name}: {col}")
+                    plt.xlabel(col)
+                    plt.ylabel("Frequency")
+                    plt.tight_layout()
+                    plt.savefig(f"docs/raw_{df_name}_{col}_hist.png")
+                    plt.close()
 
 def inspect_initial_data(dfs):
     raw_stats = view_raw_df(dfs)
     print(raw_stats)
+    with open('docs/data_statistics.md', 'w') as f:
+        f.write("# Raw Data Statistics\n")
+        f.write(df_to_markdown(raw_stats))
+        f.write("\n\n")
     raw_stats.to_csv('data/raw_data_stats.csv', index=False)
     
+    visualize_raw_data(dfs)
+
     print("\nPlans Info:")
     print(dfs['plans_df'].info())
     print(dfs['plans_df'].sample(2))
 
 def prepare_data_types(dfs):
+    # Label numeric categorical and time data
+    time_cols = ['call_date', 'session_date', 'message_date', 'reg_date', 'churn_date']
+    num_cols = ['duration', 'mb_used', 'usd_monthly_pay', 'usd_per_gb', 'usd_per_message', 'usd_per_minute']
+    cat_cols = ['plan', 'city', 'plan_name']
+    target_col = 'revenue' 
+    
     # Fix IDs
     for name in ['calls_df', 'internet_df', 'messages_df', 'users_df']:
         if 'id' in dfs[name].columns:

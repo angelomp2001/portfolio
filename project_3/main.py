@@ -11,8 +11,8 @@ from src.data_preprocessing import set_datatype, fill_missing, deduplicate
 from src.data_preprocessing import prepare_data_types, handle_missing_values, remove_duplicates, enrich_data
 from src.data_preprocessing import n_monthly_calls, n_monthly_messages, n_monthly_internet, monthly_revenue, sum_plan_revenue, mean_plan_revenue, plot_revenue, monthly_minutes_by_plan
 
-# Load the data files into different DataFrames
-dfs = load_all_data()
+# Load the data files into different DataFrames (can add sample_frac=0.1 for huge datasets)
+dfs = load_all_data(sample_frac=None)
 inspect_initial_data(dfs)
 
 # Process data (Fix types, fill missing, deduplicate, enrich)
@@ -22,7 +22,12 @@ dfs = remove_duplicates(dfs)
 dfs = enrich_data(dfs)
 
 # Save clean data statistics
+from src.data_preprocessing import df_to_markdown
 clean_stats = view_raw_df(dfs)
+with open('docs/data_statistics.md', 'a') as f:
+    f.write("# Clean Data Statistics\n")
+    f.write(df_to_markdown(clean_stats))
+    f.write("\n\n")
 clean_stats.to_csv('data/clean_data_stats.csv', index=False)
 
 # Unpack DataFrames for further processing
