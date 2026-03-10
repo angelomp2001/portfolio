@@ -1,6 +1,10 @@
 # Loading all the libraries	
 import matplotlib.pyplot as plt
 from scipy import stats as st
+import numpy as np
+
+# Global random seed
+np.random.seed(42)
 
 from src.data_preprocessing import load_all_data, inspect_initial_data, view_raw_df, append_datetime_features
 from src.data_preprocessing import set_datatype, fill_missing, deduplicate
@@ -17,6 +21,10 @@ dfs = handle_missing_values(dfs)
 dfs = remove_duplicates(dfs)
 dfs = enrich_data(dfs)
 
+# Save clean data statistics
+clean_stats = view_raw_df(dfs)
+clean_stats.to_csv('data/clean_data_stats.csv', index=False)
+
 # Unpack DataFrames for further processing
 calls_df = dfs['calls_df']
 internet_df = dfs['internet_df']
@@ -25,28 +33,28 @@ plans_df = dfs['plans_df']
 users_df = dfs['users_df']
 
 # Print the general/summary information about the users' DataFrame
-view_raw_df(users_df)
+print(view_raw_df(users_df))
 
 # Print a sample of data for users
-users_df.sample(5, random_state = 1)
+print(users_df.sample(5))
 
 # Print the general/summary information about the calls' DataFrame
-view_raw_df(calls_df)
+print(view_raw_df(calls_df))
 
 # Print a sample of data for calls
-calls_df.sample(5, random_state = 1)
+print(calls_df.sample(5))
 
 # Print the general/summary information about the messages' DataFrame
-view_raw_df(messages_df)
+print(view_raw_df(messages_df))
 
 # Print a sample of data for messages
-messages_df.sample(5, random_state = 1)
+print(messages_df.sample(5))
 
 # Print the general/summary information about the internet DataFrame
-view_raw_df(internet_df)
+print(view_raw_df(internet_df))
 
 # Print a sample of data for the internet traffic
-internet_df.sample(5, random_state = 1)
+print(internet_df.sample(5))
 
 # Print out the plan conditions and make sure they are clear for you
 print(plans_df)

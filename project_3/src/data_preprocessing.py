@@ -18,11 +18,13 @@ def load_all_data():
     }
 
 def inspect_initial_data(dfs):
-    print(view_raw_df(dfs))
+    raw_stats = view_raw_df(dfs)
+    print(raw_stats)
+    raw_stats.to_csv('data/raw_data_stats.csv', index=False)
     
     print("\nPlans Info:")
     print(dfs['plans_df'].info())
-    print(dfs['plans_df'].sample(2, random_state=1))
+    print(dfs['plans_df'].sample(2))
 
 def prepare_data_types(dfs):
     # Fix IDs
