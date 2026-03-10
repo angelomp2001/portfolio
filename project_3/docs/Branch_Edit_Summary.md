@@ -8,4 +8,7 @@
    3. Configured script to save out `clean_data_stats.csv` after preprocessing.
    4. Enforced explicit `print()` wrapper around the `df.sample(5)` so it can be seen in non-interactive sessions. 
    5. Created `tests.py` using `unittest` to ensure code is unit testable, checking the explicit datatype setting functionality from `src/data_preprocessing.py`.
+   6. Updated `inspect_initial_data` to output a `docs/data_statistics.md` markdown table containing column statistics.
+   7. Added `df_to_markdown` and `visualize_raw_data` functions to `data_preprocessing.py` to save `docs/raw_df_col_hist.png` distribution charts.
+   8. Implemented a `DAG.py` file to programmatically generate and save a `docs/component_diagram.png` outlining the project's data flow.
 - Documentation: Updated `README.md` with the newly polished details of Project 3 to correctly represent the project boundaries and structure.
