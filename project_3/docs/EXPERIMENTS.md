@@ -1,5 +1,19 @@
 # EXPERIMENTS
 
+## Experiment 2: Refine-DAG
+**Goal**: Implement an AST-based parser to dynamically retrieve dependencies and module components, replacing hardcoded nodes in `DAG.py`. Formalize an experimental branch workflow.
+**Outcome**: A flexible dependency visualization system that scans `.py` elements automatically. Created a robust workflow to continuously and modularly push project improvements.
+
+### Branch Edit Summary
+- DAG Refinement: Replaced hardcoded dependency nodes in `DAG.py` with dynamic AST parsing logic. The script now reads the Python files in the directory automatically, detects file contents including top-level classes, functions, variables, and cross-references their imports to programmatically generate an accurate component diagram.
+- DAG Visual Polish: Implemented dynamic container heights, color styling, nested element boxes, custom layout parameters, and detailed legend for the new module graph format. The output is now saved dynamically as `dag.png` in the project root.
+- Branching Workflow: Created `docs/branching_workflow.md` to define a systematic, step-by-step approach to running git-based experimental iterations on the project.
+
+### Results
+- Dynamic module parsing implemented via AST for accurate dependency mapping across the application.
+- Established a concrete Git branching workflow to standardize experimental iteration and logging.
+- `DAG.py` now robustly builds and saves a detailed modular component diagram `dag.png` to the project root.
+
 ## Experiment 1: structural-alignment
 **Goal**: Align the project structure, generate comprehensive valid documentation, update checklist with existing techniques, and enforce missing logical core components.
 **Outcome**: The `README.md` clearly reflects this EDA-only script project architecture. `checklist.md` reflects accurate mappings. `main.py` runs with initialized random states and properly dumps `raw_data_stats.csv` and `clean_data_stats.csv`. A testing module `tests.py` now exercises key type-assignment features to prove code testability. Branch edits compiled.

@@ -1,3 +1,4 @@
 # RESULTS
-- Successfully cleaned, enriched, and structured Project 3 source files.
-- Generates `docs/data_statistics.md`, multiple `docs/raw_*_hist.png` visualizations, and `docs/component_diagram.png`.
+- Dynamic module parsing implemented via AST for accurate dependency mapping across the application.
+- Established a concrete Git branching workflow to standardize experimental iteration and logging.
+- `DAG.py` now robustly builds and saves a detailed modular component diagram `dag.png` to the project root.
