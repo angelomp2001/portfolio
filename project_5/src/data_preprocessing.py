@@ -4,10 +4,23 @@ import numpy as np
 from scipy import stats as st
 import matplotlib.pyplot as plt
 
+# Global configuration
+RANDOM_STATE = 42
 
 
-def load_data(path):
-    return pd.read_csv(path)
+
+def load_data(path, sample_size=None, save_stats=True):
+    df = pd.read_csv(path)
+    if sample_size and sample_size < len(df):
+        print(f"Sampling {sample_size} rows from {len(df)} total rows.")
+        df = df.sample(n=sample_size, random_state=RANDOM_STATE)
+    
+    if save_stats:
+        stats = df.describe(include='all').T
+        stats.to_markdown("docs/raw_data_statistics.md")
+        
+    return df
+
 
 def view(dfs, view=None):
     # Convert input to a dictionary of DataFrames if needed

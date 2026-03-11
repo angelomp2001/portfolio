@@ -26,6 +26,13 @@ adjust_dtypes(df)
 #remove duplicates
 drop_duplicates(df)
 
+NUMERIC_COLS = ['na_sales', 'eu_sales', 'jp_sales', 'other_sales', 'critic_score', 'user_score']
+CATEGORICAL_COLS = ['name', 'platform', 'genre', 'rating']
+TIME_COLS = ['year_of_release']
+
+# Save clean data statistics
+df.describe(include='all').T.to_markdown("docs/clean_data_statistics.md")
+
 # Display basic information about the dataset
 df.info()
 
