@@ -1,0 +1,32 @@
+[✅] Global random seed # if a random seed is used anywhere, set RANDOM_STATE and apply ubiquitously.
+[✅] Hyperparameter grid # MODELS = [(name, model_instance, is_tree, param_grid)]
+[✅] Save raw data statistics #  no function. Save, where each row is a column listing stats: docs/data_statistics.md
+[✅] Sampling #  after load_data(), apply: df_raw = df_raw.sample(...=RANDOM_STATE)
+[✅] Visualize raw data: histogram/bar chart #  All raw data must be visualized.
+[✅] Label numeric categorical and time data # reserve a variable for these types of data and use it.
+[✅] Label target # if there is a target column, make sure it’s labeled. 
+[✅] Include all evaluation Metrics: MAE, MSE, RMSE, R2, Accuracy, Precision, recall, F1, Confusion matrix, ROC AUC, PR AUC, Log loss
+[❌] Time data as datetime # ensure any time data is type datetime. 
+[❌] Feature engineer datetime: hour/day/month/weekday/lag features # apply to datetime columns. 
+[❌] Apply PolynomialFeatures # apply for every project it makes sense. 
+[❌] Clean data visualizations: univariate, bivariate, timeseries # Print the distribution of the data when it’s clean.
+[❌] Save clean data statistics #  no function. Save, where each row is a column listing stats: docs/data_statistics.md
+[❌] Training visualizations: timeseries # print chart of training iterations
+[❌] training statistics: duration, Max memory usage, CPU/GPU utilization # save: branch_experiment, readme
+[✅] Random Search # implement for hyper/parameter grid search
+[✅] Cross validation with holdout: KFold, StratifiedKFold, TimeSeriesSplit # apply for all project that split data
+[✅] Pipeline # apply for all projects that split data
+[❌] Leakage-safe Encoding: Ordinal for tree, OHE otherwise # if applicable apply this logic for appropriate features
+[✅] Feature scaling: Min/max for bounded values, standardization otherwise. # if applicable apply this logic for appropriate features
+[❌] Early Stopping parameters # if applicable, apply to NN training
+[❌] Dropout parameter # if applicable, apply to NN training
+[❌] Model checkpoints # if applicable, apply to NN training
+[❌] Learning rate adaptation # if applicable, apply to NN training
+[✅] Save best model # if multiple models were trained
+[✅] API: load best model, run inference, log and save run and results # if there is a model, apply
+[✅] Unit testable # apply if functions or classes are created.
+[✅] Random Forest: Illustrate feature importance # if RF used, save important features: docs/random_forest_important_features.md
+[✅] Decision Tree: visual of the decision tree model # if applicable, save: docs/decision_tree_model.png
+[✅] Component diagram (DAG) # create DAG.py file, use a library to auto-generate DAG diagram. If it’s not DAG, make it DAG.  Move the code to change the direction of dependency. You first build modules, then later organize them by components.
+[✅] Handle missing values # if there is missing data, make sure it’s addressed. 
+[✅] Remove duplicates # ensure duplicates are removed. 

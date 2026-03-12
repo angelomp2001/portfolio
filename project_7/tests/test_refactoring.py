@@ -1,7 +1,12 @@
 import pandas as pd
 import unittest
 import os
+import sys
 import shutil
+
+# Add the project directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.data.loader import load_data
 from src.data.explorer import DataExplorer
 from src.models.trainer import ModelTrainer, split_data

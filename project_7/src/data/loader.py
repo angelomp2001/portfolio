@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from src.config import RANDOM_STATE
 
 def load_data(file_path):
     """
@@ -16,4 +17,10 @@ def load_data(file_path):
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
-    return pd.read_csv(file_path)
+    df = pd.read_csv(file_path)
+    # Handle missing values and duplicates
+    df.drop_duplicates(inplace=True)
+    df.dropna(inplace=True)
+    # Sampling
+    df = df.sample(frac=1.0, random_state=RANDOM_STATE).reset_index(drop=True)
+    return df
