@@ -93,3 +93,44 @@ This branch focused on refactoring the monolithic `data_preprocessing.py` script
 | Refactor-Data-Preprocessing | 0.8087 | 0.6936 | 2.6382 |
 | Experiment | Accuracy | Baseline | Performance Ratio |
 | Refactor-Data-Preprocessing | 0.8087 | 0.6936 | 2.6382 |
+
+---
+
+## Experiment ID: EXP-project7-refactor-v2
+**Date**: 2026-03-12
+**Status**: Success ✅
+
+### Branch Edit Summary
+## Overview
+Replaced the old `project_7` code with the fully refactored `project_7_v2` codebase.
+
+## Changes Made
+- Deleted the old `project_7` directory.
+- Renamed `project_7_v2` to `project_7`.
+- The new codebase uses robust cross-validation (StratifiedKFold) and `sklearn.pipeline.Pipeline` with built-in preprocessing.
+- Saved model is now a Pipeline instead of just the classifier.
+
+## Results
+- The new model predicts similarly to the old one (~95.33% match rate) while being much more robust to raw data inputs by doing preprocessing inside the pipeline.
+
+### Results Data
+**Best Model**: RandomForestClassifier
+**Primary Metric (accuracy) Test Score**: 0.8087
+
+#### Test Set Evaluation
+| Metric | Score |
+|---|---|
+| accuracy | 0.8087 |
+| precision | 0.8364 |
+| recall | 0.4670 |
+| f1 | 0.5993 |
+| roc_auc | 0.8019 |
+
+#### CV Results for Best Model
+| Metric | Mean CV Score |
+|---|---|
+| accuracy | 0.7958 |
+| precision | 0.7201 |
+| recall | 0.5470 |
+| f1 | 0.6213 |
+| roc_auc | 0.7958 |
