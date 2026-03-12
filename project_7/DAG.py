@@ -24,7 +24,7 @@ from matplotlib.lines import Line2D
 
 
 
-PROJECT_ROOT: str | None = r"C:\Users\Angelo\Documents\github\portfolio\portfolio\project_7_v2"
+PROJECT_ROOT: str | None = r"C:\Users\Angelo\Documents\github\portfolio\portfolio\project_7"
 
 
 
@@ -582,11 +582,32 @@ def visualize_module_dependencies(
 
 
 
+    # Identify isolated nodes (no dependencies on other project modules)
+    isolated_nodes = []
+    for n in modules:
+        if n == "Other":
+            continue
+        has_in = any(u for u, v in dep_edges if v == n and u != "Other")
+        has_out = any(v for u, v in dep_edges if u == n and v != "Other")
+        if not has_in and not has_out:
+            isolated_nodes.append(n)
+
     layer = {n: 0 for n in modules}
     for n in topo_order:
         preds = list(dep_graph.predecessors(n))
+        
+        # Isolated nodes start at 0, everything else starts at 1
+        if n in isolated_nodes:
+            base_layer = 0
+        elif n != "Other":
+            base_layer = 1
+        else:
+            base_layer = 0
+            
         if preds:
-            layer[n] = max(layer[p] + 1 for p in preds)
+            layer[n] = max(base_layer, max(layer[p] + 1 for p in preds))
+        else:
+            layer[n] = base_layer
 
 
 
