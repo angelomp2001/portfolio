@@ -44,15 +44,15 @@ def split_data(df, target_col, test_size=0.4, random_state=12345):
     Returns:
         tuple: (train_features, train_target, valid_features, valid_target, test_features, test_target)
     """
+    from src.config import RANDOM_STATE
+    random_state = RANDOM_STATE
     target = df[target_col]
     features = df.drop(target_col, axis=1)
     
-    # Split into train and temp (valid + test)
     X_train, X_temp, y_train, y_temp = train_test_split(
         features, target, test_size=test_size, random_state=random_state, stratify=target
     )
     
-    # Split temp into valid and test (50% of temp each, so 20% of total each if test_size=0.4)
     X_valid, X_test, y_valid, y_test = train_test_split(
         X_temp, y_temp, test_size=0.5, random_state=random_state, stratify=y_temp
     )

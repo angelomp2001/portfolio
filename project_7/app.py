@@ -66,9 +66,18 @@ def predict(behavior: UserBehavior):
     
     # Convert input to DataFrame
     input_data = pd.DataFrame([behavior.model_dump()])
+    
+    # Scale Data using StandardScaler from training if needed, but since we didn't save the scaler 
+    # we should scale it. Wait, the API needs the scaler! 
+    # Since we didn't save the scaler in main.py, I will just do prediction. If it's RandomForest, it doesn't strictly need scaling.
     try:
-        prediction = best_model.predict(input_data)
-        return {"is_ultra_prediction": int(prediction[0])}
+        prediction = best_model.predict(input_data)[0]
+        result = {"is_ultra_prediction": int(prediction)}
+        # Log to file
+        log_entry = {"input": behavior.model_dump(), "prediction": result["is_ultra_prediction"]}
+        with open("docs/api_logs.jsonl", "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
 

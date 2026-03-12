@@ -6,11 +6,23 @@ from sklearn.metrics import accuracy_score
 import joblib
 import json
 import os
+import matplotlib.pyplot as plt
 
 def main():
     #import data
     path = 'data/users_behavior.csv'
     df = load_data(path)
+
+    # Output Raw Data Stats and Visualizations
+    with open('docs/data_statistics.md', 'w') as f:
+        f.write("# Data Statistics\n")
+        f.write(df.describe().to_markdown())
+    
+    # print raw data stats and visualizations
+    df.hist(figsize=(10, 8))
+    plt.tight_layout()
+    plt.savefig('docs/raw_data_hist.png')
+    plt.close()
 
     print(df.head())
     print(df.describe())
@@ -20,12 +32,12 @@ def main():
     explorer.view() 
 
     # define target and features
-    target = df['is_ultra']
-    features = df.drop(target.name, axis = 1)
+    from src.config import TARGET_COL
+    target = df[TARGET_COL]
+    features = df.drop(target.name, axis=1)
 
     # select best model
-    # Replaces model_picker functionality
-    best_model, best_accuracy_score, train_features, train_target, test_features, test_target = select_best_model(features, target)
+    best_model, best_accuracy_score, train_features, train_target, test_features, test_target, metrics = select_best_model(features, target)
 
     # sanity check using average
     average = train_target.mean()
@@ -35,7 +47,8 @@ def main():
     print(f'average:{average}\nmodel_performance:{model_performance}')
 
     # saninty check with DummyClassifier (creates column of target based on strategy and no features)
-    dummy_clf = DummyClassifier(strategy="most_frequent", random_state=0)
+    from src.config import RANDOM_STATE
+    dummy_clf = DummyClassifier(strategy="most_frequent", random_state=RANDOM_STATE)
     dummy_clf.fit(train_features, train_target) # it asks for features, but it doesn't use them. 
     dummy_y_hat = dummy_clf.predict(test_features)
     baseline_accuracy = accuracy_score(test_target, dummy_y_hat)
@@ -60,7 +73,8 @@ def main():
         "best_accuracy_score": float(best_accuracy_score),
         "average": float(average),
         "model_performance": float(model_performance),
-        "baseline_accuracy": float(baseline_accuracy)
+        "baseline_accuracy": float(baseline_accuracy),
+        **{k: float(v) for k, v in metrics.items()}
     }
     METADATA_PATH = 'models/metadata.json'
     with open(METADATA_PATH, 'w') as f:

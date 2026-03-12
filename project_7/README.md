@@ -1,72 +1,85 @@
 # User Behavior Model Analysis
 
-## Project Overview
-This project predicts whether a user is using the "Ultra" plan (`is_ultra`) based on their behavior data. We aim to develop a model with the highest possible accuracy, targeting a threshold of 0.75.
+## Business Case
+A telecom company needs a model to recommend the right plan ("Ultra" or "Smart") based on subscriber behavior.
 
-## Data Preprocessing & Modeling Strategy
-The target variable (`is_ultra`) is imbalanced: roughly 30% are "Ultra" users (1s) and 70% are standard users (0s). To ensure a robust and fair evaluation, we implemented the following strategy:
+## Task
+* Predict whether a user is using the "Ultra" plan (`is_ultra`) based on their behavior data: `calls`, `minutes`, `messages`, and `mb_used`.
 
-1.  **Data Partitioning**: The dataset was split into three distinct sets:
-    *   **Training Set (60%)**: Used to train the models.
-    *   **Validation Set (20%)**: Used for hyperparameter tuning and model selection.
-    *   **Test Set (20%)**: Used for the final evaluation of the selected model.
-2.  **Stratified Splitting**: We used the `stratify` parameter in `train_test_split()` to ensure our training, validation, and test sets all retain the original 30/70 proportion of target values.
-3.  **Baseline Comparison**: We evaluated model quality not just by raw accuracy, but by comparing it to a `DummyClassifier` baseline that predicted based on the most frequent class.
+## Project Summary and Findings
+Our analysis shows that accounting for the target distribution and performing systematic hyperparameter tuning is critical. The best model was tested to exceed the baseline and the target threshold (accuracy > 0.75).
+* Random Forest Classifier achieved ~81.1% accuracy.
+* Dummy Classifier Baseline achieved ~69.4% accuracy.
 
-## Model Selection & Hyperparameter Optimization
-We compared three different machine learning models to identify the best predictor for user behavior:
+### Models Evaluated
+| Base Model             |
+|------------------------|
+| DecisionTreeClassifier |
+| RandomForestClassifier |
+| LogisticRegression     |
 
-| Model | Hyperparameters Optimized | Search Range |
-| :--- | :--- | :--- |
-| **Decision Tree** | `max_depth` | 1 - 20 |
-| **Random Forest** | `max_depth`, `n_estimators` | `max_depth`: 1-20, `n_estimators`: 10-100 |
-| **Logistic Regression** | *N/A (Baseline)* | default (solver='liblinear') |
+## Environment
+Dev ✅
 
-### Optimization Process
-We developed a custom **Hyperparameter Optimizer** that uses an iterative approach (similar to a binary search) to efficiently find the optimal values for the parameters listed above. The optimization follows these steps:
-1.  Train the model on the **Training Set**.
-2.  Evaluate the model on the **Validation Set**.
-3.  Iteratively adjust parameters to maximize the validation accuracy.
-4.  Once the best model is identified, it is refit on the training data and finally evaluated on the **Test Set**.
+## Project folder structure
+├── data/
+│   └── users_behavior.csv             # Raw dataset
+├── docs/
+│   ├── branching_workflow.md          # Experiment branching workflow
+│   ├── EXPERIMENTS.md                 # Log of all experiments run
+│   ├── RESULTS.md                     # Results summary for current branch
+│   ├── Branch_Edit_Summary.md         # Detailed code changes for current branch
+│   └── experiment_log.md              # Running log of all merged experiments
+├── models/
+│   ├── best_model.joblib
+│   └── metadata.json
+├── src/
+│   ├── data/
+│   │   ├── loader.py                  # Load data
+│   │   └── explorer.py                # Data exploration
+│   ├── models/
+│   │   ├── trainer.py                 # Model training module
+│   │   └── tuner.py                   # Hyperparameter tuner module
+│   └── pipeline.py                    # Orchestrates training and evaluation
+├── tests/
+│   └── test_refactoring.py            # Unit tests
+├── main.py                            # Entry point — orchestrates the pipeline
+├── app.py                             # API Server
+├── requirements.txt                   # pip requirements
+├── .gitignore                         # git ignores
+└── README.md                          # This file
 
-## Conclusion
-Our analysis shows that accounting for the target distribution and performing systematic hyperparameter tuning is critical.
+## Project documentation
+Readme: the main project document
+branching_workflow.md: git strategy and workflow for the experiments
+Branch_Edit_Summary.md: a description of the edits done on this branch.
+checklist.md: a generic template checklist of what features should be in this project
+experiment_log.md: a log of the results from the branch.
+RESULTS.md: the latest results of the branch, just before it merges with main.
+EXPERIMENTS.md: a cumulative log of experiment logs that lives on the main branch only. 
 
-*   **Baseline Model**: A naive "Dummy" predictor (guessing the most frequent class) achieves an accuracy of ~**69.4%**.
-*   **Our Best Model**: The **RandomForestClassifier** outperformed the others, achieving a test accuracy of ~**81.1%**.
+To know what is happening, read the readme, then the results. If the results are inadequate, read the experiments.md to see how far along we are. The latest experiment_log and/or branch_edit_summary will tell you where we are right now. From this, you can guess what to do next to complete the branch experiment and complete the project.  
 
-**Result**: Our model outperforms the baseline by approximately **12%**. This exceeds our target threshold of 0.75 accuracy and confirms that the model provides significant predictive value beyond simple guessing.
-
-## How to Run the Prediction Service
-
-The project is split into two parts: **Model Training** and **API Service**.
-
-### 1. Install Dependencies
-Ensure you have the required packages installed:
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Train and Save the Model
-Before running the API, you must train the model. This script will perform hyperparameter optimization and save the best model and its metadata to the `models/` directory.
+## How to train model
 ```bash
 python main.py
 ```
 
-### 3. Start the API Server
-Once the model is saved, you can start the FastAPI server. The server loads the pre-trained model from disk, making it start instantly.
+## How to run inference via API
 ```bash
 uvicorn app:app --reload
+# Access docs at http://127.0.0.1:8000/docs
 ```
 
-### 4. Get Model Performance
-Visit `http://127.0.0.1:8000/` to see the performance metrics of the currently loaded model.
+## Data Pipeline Overview
+├── Load — Read data (`users_behavior.csv`)
+├── Clean — Data exploration and summary statistics
+├── Split — Stratified split into training, validation, test
+├── Train — Fits candidate models and performs hyperparameter searching
+├── Evaluate — Compare validation scores for candidate models
+└── Save — Select the best model and evaluate on hold-out test set; serialize best model
 
-### 5. Get a Prediction
-Submit user behavior data to the `/predict` endpoint.
-
-**Using the Interactive Docs:**
-1.  Go to `http://127.0.0.1:8000/docs`
-2.  Click on `POST /predict` -> `Try it out`
-3.  Enter the values for `calls`, `minutes`, `messages`, and `mb_used`.
-4.  Click `Execute`.
+## API Overview
+├── Load — Loads the saved `best_model.joblib` and `metadata.json` on startup
+├── Predict — Accepts POST requests with user behavior to generate predictions
+└── Save — Log & save is missing.
