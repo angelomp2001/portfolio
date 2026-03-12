@@ -24,7 +24,7 @@ from matplotlib.lines import Line2D
 
 
 
-PROJECT_ROOT: str | None = r"C:\Users\Angelo\Documents\github\portfolio\portfolio\project_7"
+PROJECT_ROOT: str | None = r"C:\Users\Angelo\Documents\github\portfolio\portfolio\project_7_v2"
 
 
 

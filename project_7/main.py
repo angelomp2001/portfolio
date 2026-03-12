@@ -1,86 +1,133 @@
-from src.data.loader import load_data
-from src.data.explorer import DataExplorer
-from src.pipeline import select_best_model
-from sklearn.dummy import DummyClassifier
-from sklearn.metrics import accuracy_score
-import joblib
-import json
 import os
-import matplotlib.pyplot as plt
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+from src.config import TARGET_COL, MODELS
+from src.data_preprocessing import (
+    load_data, save_stats, save_charts, clean_data, 
+    data_types, column_preprocessor
+)
+from src.model_training import (
+    train_model, tune_model, save_model, test_model, save_results
+)
 
-def main():
-    #import data
-    path = 'data/users_behavior.csv'
-    df = load_data(path)
+def main(
+    sample_size: int | None = None,
+    k_folds: int = 5,
+    random_state: int = 42,
+    metric: str = "f1",
+):
+    # 1. Load and explore data
+    df_raw = load_data(sample=sample_size)
+    save_stats(df_raw, label="raw")
+    save_charts(df_raw, label="raw")
 
-    # Output Raw Data Stats and Visualizations
-    with open('docs/data_statistics.md', 'w') as f:
-        f.write("# Data Statistics\n")
-        f.write(df.describe().to_markdown())
-    
-    # print raw data stats and visualizations
-    df.hist(figsize=(10, 8))
-    plt.tight_layout()
-    plt.savefig('docs/raw_data_hist.png')
-    plt.close()
+    # 2. Clean data
+    df = clean_data(df_raw)
+    save_stats(df, label="clean")
+    save_charts(df, label="clean")
 
-    print(df.head())
-    print(df.describe())
+    # 3. Train / test split
+    X = df.drop(TARGET_COL, axis=1)
+    y = df[TARGET_COL]
 
-    # QC data quality
-    explorer = DataExplorer(df)
-    explorer.view() 
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=random_state,
+        stratify=y,
+    )
 
-    # define target and features
-    from src.config import TARGET_COL
-    target = df[TARGET_COL]
-    features = df.drop(target.name, axis=1)
+    # 4. Data types for preprocessing
+    num_cols, cat_cols = data_types(X)
 
-    # select best model
-    best_model, best_accuracy_score, train_features, train_target, test_features, test_target, metrics = select_best_model(features, target)
+    # 5. Build pipelines, run CV, collect results
+    pipelines: dict[str, Pipeline] = {}
+    hyperparam_grids: dict[str, dict] = {}
+    cv_results: dict[str, dict] = {}
 
-    # sanity check using average
-    average = train_target.mean()
+    for name, model, is_tree, grid in MODELS:
+        preprocessor = column_preprocessor(
+            num_cols=num_cols,
+            cat_cols=cat_cols,
+            is_tree=is_tree,
+        )
 
-    # model performance vs average
-    model_performance = best_accuracy_score / average
-    print(f'average:{average}\nmodel_performance:{model_performance}')
+        pipelines[name] = Pipeline(
+            steps=[
+                ("preprocessor", preprocessor),
+                ("model", model),
+            ]
+        )
 
-    # saninty check with DummyClassifier (creates column of target based on strategy and no features)
-    from src.config import RANDOM_STATE
-    dummy_clf = DummyClassifier(strategy="most_frequent", random_state=RANDOM_STATE)
-    dummy_clf.fit(train_features, train_target) # it asks for features, but it doesn't use them. 
-    dummy_y_hat = dummy_clf.predict(test_features)
-    baseline_accuracy = accuracy_score(test_target, dummy_y_hat)
+        hyperparam_grids[name] = grid
 
-    print("Baseline Accuracy:", baseline_accuracy)
+        cv_results[name] = train_model(
+            pipeline=pipelines[name],
+            X_train=X_train,
+            y_train=y_train,
+            k_folds=k_folds,
+            random_state=random_state,
+            metric=metric,
+            param_grid=hyperparam_grids[name],
+        )
 
-    # Log results to RESULTS.md
-    with open("RESULTS.md", "a") as f:
-        f.write(f"| Experiment | Accuracy | Baseline | Performance Ratio |\n")
-        f.write(f"| Refactor-Data-Preprocessing | {best_accuracy_score:.4f} | {baseline_accuracy:.4f} | {model_performance:.4f} |\n")
-        
-    # Ensure models directory exists
-    os.makedirs('models', exist_ok=True)
+    # 6. Pick best model by chosen metric
+    best_model_name = max(
+        cv_results,
+        key=lambda name: cv_results[name][metric]
+    )
+    best_pipeline = pipelines[best_model_name]
 
-    # Save the model
-    MODEL_PATH = 'models/best_model.joblib'
-    joblib.dump(best_model, MODEL_PATH)
-    print(f"Model saved to {MODEL_PATH}")
-    
-    # Save the metadata
-    metadata = {
-        "best_accuracy_score": float(best_accuracy_score),
-        "average": float(average),
-        "model_performance": float(model_performance),
-        "baseline_accuracy": float(baseline_accuracy),
-        **{k: float(v) for k, v in metrics.items()}
-    }
-    METADATA_PATH = 'models/metadata.json'
-    with open(METADATA_PATH, 'w') as f:
-        json.dump(metadata, f, indent=4)
-        
-    print(f"Metadata saved to {METADATA_PATH}")
+    # 7. Optionally: hyperparameter tuning for the best model
+    if hyperparam_grids[best_model_name]:
+        best_pipeline_tuned = tune_model(
+            pipeline=best_pipeline,
+            X_train=X_train,
+            y_train=y_train,
+            metric=metric,
+            param_grid=hyperparam_grids[best_model_name],
+        )
+    else:
+        best_pipeline_tuned = best_pipeline
+
+    # 8. Fit best pipeline on full training data
+    best_pipeline_tuned.fit(X_train, y_train)
+
+    # 9. Save model + CV results
+    save_model(
+        model=best_pipeline_tuned,
+        model_name=best_model_name,
+        metadata={
+            "metric": metric,
+            "cv_results": cv_results[best_model_name],
+            "random_state": random_state,
+            "k_folds": k_folds,
+            "num_cols": num_cols,
+            "cat_cols": cat_cols,
+        },
+    )
+
+    # 10. Final test evaluation
+    test_results = test_model(
+        model=best_pipeline_tuned,
+        X_test=X_test,
+        y_test=y_test,
+        metric=metric,
+    )
+
+    # 11. Save test results (and optionally all CV results)
+    save_results(
+        results={
+            "test": test_results,
+            "cv": cv_results,
+            "best_model_name": best_model_name,
+            "metric": metric,
+        },
+        model_name=best_model_name,
+    )
+
 
 if __name__ == "__main__":
-    main()
+    from src.config import RANDOM_STATE
+    main(random_state=RANDOM_STATE, metric="accuracy")
