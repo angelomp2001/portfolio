@@ -12,7 +12,7 @@ sys.path.append(os.path.abspath('project_7_v2'))
 
 def validate_models():
     # Load dataset
-    df = pd.read_csv('project_7/data/users_behavior.csv')
+    df = pd.read_csv('project_7/data/data.csv')
     
     # 1. Prepare data for project 7
     # project_7 uses train/valid/test split and fits StandardScaler on train set. 

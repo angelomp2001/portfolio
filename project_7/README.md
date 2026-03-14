@@ -8,7 +8,7 @@ A telecom company needs a model to recommend the right plan ("Ultra" or "Smart")
 
 ## Project Summary and Findings
 Our analysis shows that accounting for the target distribution and performing systematic hyperparameter tuning is critical. The best model was tested to exceed the baseline and the target threshold (accuracy > 0.75).
-* Random Forest Classifier achieved ~81.1% accuracy.
+* Random Forest Classifier achieved ~80.9% accuracy.
 * Dummy Classifier Baseline achieved ~69.4% accuracy.
 
 ### Models Evaluated
