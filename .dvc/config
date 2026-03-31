@@ -1,0 +1,4 @@
+[core]
+    remote = myremote
+['remote "myremote"']
+    url = C:\Users\Angelo\Documents\github\portfolio\portfolio\sprint_17_AIML\churn-prediction\data
