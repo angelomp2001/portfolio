@@ -23,30 +23,29 @@ Dev ✅
 
 ## Project folder structure
 ├── data/
-│   └── users_behavior.csv             # Raw dataset
+│   └── data.csv                       # Raw dataset
 ├── docs/
 │   ├── branching_workflow.md          # Experiment branching workflow
-│   ├── EXPERIMENTS.md                 # Log of all experiments run
 │   ├── RESULTS.md                     # Results summary for current branch
 │   ├── Branch_Edit_Summary.md         # Detailed code changes for current branch
-│   └── experiment_log.md              # Running log of all merged experiments
+│   ├── experiment_log.md              # Running log of all merged experiments
+│   ├── checklist.md                   # Generic template checklist
+│   ├── project_plan_v2.md             # Project plan documentation
+│   ├── data_stats_raw.json            # Raw data statistics
+│   ├── data_stats_clean.json          # Clean data statistics
+│   ├── data_charts_raw_hist.png       # Raw data visualization
+│   ├── data_charts_clean_pairplot.png # Clean data visualization
+│   └── DAG.png                        # Component diagram visualization
 ├── models/
-│   ├── best_model.joblib
-│   └── metadata.json
+│   ├── RandomForestClassifier.joblib  # Serialized model
+│   └── RandomForestClassifier_metadata.json # Best model metadata
 ├── src/
-│   ├── data/
-│   │   ├── loader.py                  # Load data
-│   │   └── explorer.py                # Data exploration
-│   ├── models/
-│   │   ├── trainer.py                 # Model training module
-│   │   └── tuner.py                   # Hyperparameter tuner module
-│   └── pipeline.py                    # Orchestrates training and evaluation
-├── tests/
-│   └── test_refactoring.py            # Unit tests
+│   ├── config.py                      # Configuration file
+│   ├── data_preprocessing.py          # Data preparation module
+│   └── model_training.py              # Model training module
+├── DAG.py                             # Script to generate component diagram
 ├── main.py                            # Entry point — orchestrates the pipeline
 ├── app.py                             # API Server
-├── requirements.txt                   # pip requirements
-├── .gitignore                         # git ignores
 └── README.md                          # This file
 
 ## Project documentation
@@ -56,7 +55,7 @@ Branch_Edit_Summary.md: a description of the edits done on this branch.
 checklist.md: a generic template checklist of what features should be in this project
 experiment_log.md: a log of the results from the branch.
 RESULTS.md: the latest results of the branch, just before it merges with main.
-EXPERIMENTS.md: a cumulative log of experiment logs that lives on the main branch only. 
+project_plan_v2.md: Project plan documentation.
 
 To know what is happening, read the readme, then the results. If the results are inadequate, read the experiments.md to see how far along we are. The latest experiment_log and/or branch_edit_summary will tell you where we are right now. From this, you can guess what to do next to complete the branch experiment and complete the project.  
 
@@ -72,7 +71,7 @@ uvicorn app:app --reload
 ```
 
 ## Data Pipeline Overview
-├── Load — Read data (`users_behavior.csv`)
+├── Load — Read data (`data.csv`)
 ├── Clean — Data exploration and summary statistics
 ├── Split — Stratified split into training, validation, test
 ├── Train — Fits candidate models and performs hyperparameter searching
@@ -80,6 +79,6 @@ uvicorn app:app --reload
 └── Save — Select the best model and evaluate on hold-out test set; serialize best model
 
 ## API Overview
-├── Load — Loads the saved `best_model.joblib` and `metadata.json` on startup
+├── Load — Loads the saved `RandomForestClassifier.joblib` and `RandomForestClassifier_metadata.json` on startup
 ├── Predict — Accepts POST requests with user behavior to generate predictions
 └── Save — Log & save is missing.
