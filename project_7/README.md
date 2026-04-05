@@ -30,7 +30,6 @@ Dev ✅
 │   ├── Branch_Edit_Summary.md         # Detailed code changes for current branch
 │   ├── experiment_log.md              # Running log of all merged experiments
 │   ├── checklist.md                   # Generic template checklist
-│   ├── project_plan_v2.md             # Project plan documentation
 │   ├── data_stats_raw.json            # Raw data statistics
 │   ├── data_stats_clean.json          # Clean data statistics
 │   ├── data_charts_raw_hist.png       # Raw data visualization
@@ -55,7 +54,6 @@ Branch_Edit_Summary.md: a description of the edits done on this branch.
 checklist.md: a generic template checklist of what features should be in this project
 experiment_log.md: a log of the results from the branch.
 RESULTS.md: the latest results of the branch, just before it merges with main.
-project_plan_v2.md: Project plan documentation.
 
 To know what is happening, read the readme, then the results. If the results are inadequate, read the experiments.md to see how far along we are. The latest experiment_log and/or branch_edit_summary will tell you where we are right now. From this, you can guess what to do next to complete the branch experiment and complete the project.  
 

@@ -1,5 +1,0 @@
-﻿commit 599780792d6965ab5ffc791357095ebb70c971bc
-Author: angelomp2001 <apassala@gmail.com>
-Date:   Thu Apr 2 12:49:08 2026 -0500
-
-    Update README and remove project_plan_v2
